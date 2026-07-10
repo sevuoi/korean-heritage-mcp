@@ -31,3 +31,10 @@ python -m kakao_heritage
 - Eight read-only, non-destructive, idempotent tools
 - Explicit PlayMCP tool annotations and English tool descriptions
 - Tool and server names do not include reserved platform branding
+
+## Data configuration
+
+National heritage search and detail tools use the public National Heritage
+Administration XML API without a service key. Set `KAKAO_REST_API_KEY` as a
+server-side PlayMCP environment secret to enable place resolution, nearby
+search, and nearby facility lookup.

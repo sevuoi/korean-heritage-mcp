@@ -9,6 +9,7 @@ class HeritageIdentifier(BaseModel):
     designation_code: str | None = None
     designation_type: str = ""
     designation_number: int | None = None
+    management_number: str | None = None
     city_code: str | None = None
     heritage_id: str = ""
 

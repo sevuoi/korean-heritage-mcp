@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
+import httpx
+
+from kakao_heritage.clients.heritage_api import HeritageApiClient
+from kakao_heritage.clients.kakao_local_api import KakaoLocalApiClient
 from kakao_heritage.exceptions import ToolError
-from kakao_heritage.models.common import HeritageItem
 from kakao_heritage.services.distance_service import haversine_km
+from kakao_heritage.services.heritage_codes import city_code
 from kakao_heritage.utils.map_links import build_map_link
 
 
@@ -29,56 +34,93 @@ def find_nearby_heritage(
             "success": False,
             "error": ToolError(
                 "LOCATION_REQUIRED",
-                "현재 위치 좌표가 전달되지 않았습니다. 기준 장소나 주소를 입력해 주세요.",
+                "기준 장소나 위도·경도를 입력해 주세요.",
                 recoverable=True,
                 required_input=["location 또는 latitude와 longitude"],
             ).to_dict(),
-            "generated_at": "",
         }
-    heritage_items = [
-        HeritageItem(
-            name="불국사",
-            address="경상북도 경주시",
-            latitude=35.792,
-            longitude=129.331,
-            designation_type="사적",
-            designation_number=1,
-            summary="불국사",
-            source_name="국가유산청",
-        ),
-        HeritageItem(
-            name="석굴암",
-            address="경상북도 경주시",
-            latitude=35.8,
-            longitude=129.33,
-            designation_type="사적",
-            designation_number=2,
-            summary="석굴암",
-            source_name="국가유산청",
-        ),
-    ]
+    kakao = KakaoLocalApiClient()
+    if not kakao.configured:
+        return {
+            "success": False,
+            "error": {
+                "code": "KAKAO_API_KEY_REQUIRED",
+                "message": "주변 검색을 사용하려면 서버에 KAKAO_REST_API_KEY를 설정해야 합니다.",
+                "recoverable": True,
+                "required_input": ["KAKAO_REST_API_KEY"],
+            },
+        }
+    try:
+        if latitude is None or longitude is None:
+            resolved = kakao.geocode(str(location))
+            if not resolved:
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "LOCATION_NOT_FOUND",
+                        "message": f"기준 장소를 찾지 못했습니다: {location}",
+                        "recoverable": True,
+                        "required_input": ["더 구체적인 장소명 또는 주소"],
+                    },
+                }
+            latitude, longitude = float(resolved["y"]), float(resolved["x"])
+        region = kakao.region_from_coordinates(longitude, latitude)
+        region_name = str(region.get("region_1depth_name") or "") if region else ""
+        heritage_items = HeritageApiClient().get_list(
+            city_code=city_code(region_name), page_unit=1000
+        )
+    except httpx.HTTPError:
+        return {
+            "success": False,
+            "error": {
+                "code": "EXTERNAL_API_UNAVAILABLE",
+                "message": "국가유산청 또는 Kakao Local API에 연결하지 못했습니다.",
+                "recoverable": True,
+                "required_input": [],
+            },
+        }
+
+    allowed_types = set(designation_types or [])
     results: list[dict[str, Any]] = []
     for item in heritage_items:
-        if item.latitude is None or item.longitude is None:
+        item_latitude, item_longitude = item.get("latitude"), item.get("longitude")
+        if item_latitude is None or item_longitude is None:
+            continue
+        if allowed_types and item.get("designation_type") not in allowed_types:
             continue
         distance = haversine_km(
-            latitude or 35.79, longitude or 129.33, item.latitude, item.longitude
+            latitude, longitude, float(item_latitude), float(item_longitude)
         )
-        if distance <= radius_km:
+        if distance <= max(0.1, min(radius_km, 50.0)):
             results.append(
                 {
-                    "heritage": item.model_dump(),
+                    "heritage": item,
                     "distance_km": distance,
-                    "map_url": build_map_link(item.name),
+                    "map_url": build_map_link(str(item.get("name") or "")),
                 }
             )
     results.sort(key=lambda entry: float(entry["distance_km"]))
+    warnings = ["시대 필터는 상세 정보 확인이 필요합니다."] if period else []
     return {
         "success": True,
-        "query": {"location": location, "radius_km": radius_km},
-        "data": {"results": results[:limit]},
-        "summary_markdown": "",
-        "sources": ["국가유산청"],
-        "generated_at": "",
-        "warnings": [],
+        "query": {
+            "location": location,
+            "latitude": latitude,
+            "longitude": longitude,
+            "radius_km": radius_km,
+            "designation_types": designation_types,
+            "period": period,
+        },
+        "data": {
+            "reference_location": {
+                "name": location,
+                "region": region_name,
+                "latitude": latitude,
+                "longitude": longitude,
+            },
+            "results": results[: max(1, min(limit, 20))],
+        },
+        "sources": ["국가유산청 국가유산 정보 Open API", "Kakao Local API"],
+        "generated_at": datetime.now(UTC).isoformat(),
+        "warnings": warnings,
     }

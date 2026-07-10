@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from kakao_heritage.services.trip_service import create_trip_plan
+from kakao_heritage.tools.search import search_heritage
 
 
 def plan_heritage_trip(
@@ -17,29 +19,16 @@ def plan_heritage_trip(
     include_parking: bool = True,
     max_places_per_day: int = 5,
 ) -> dict[str, Any]:
-    heritage_items = [
-        {
-            "name": "불국사",
-            "address": "경북 경주시",
-            "latitude": 35.79,
-            "longitude": 129.33,
-            "designation_type": "사찰",
-        },
-        {
-            "name": "석굴암",
-            "address": "경북 경주시",
-            "latitude": 35.8,
-            "longitude": 129.33,
-            "designation_type": "사찰",
-        },
-        {
-            "name": "첨성대",
-            "address": "경북 경주시",
-            "latitude": 35.83,
-            "longitude": 129.21,
-            "designation_type": "유적",
-        },
-    ]
+    result_limit = max(1, min(days * max_places_per_day, 20))
+    search_result = search_heritage(
+        query=themes[0] if themes else None, region=region, limit=result_limit
+    )
+    if not search_result.get("success"):
+        return search_result
+    heritage_items = search_result.get("data", {}).get("results", [])
+    if not heritage_items and themes:
+        search_result = search_heritage(region=region, limit=result_limit)
+        heritage_items = search_result.get("data", {}).get("results", [])
     plan = create_trip_plan(
         region=region,
         start_location=start_location,
@@ -56,10 +45,11 @@ def plan_heritage_trip(
             "themes": themes,
             "companions": companions,
             "pace": pace,
+            "include_food": include_food,
+            "include_parking": include_parking,
         },
         "data": plan,
-        "summary_markdown": "",
-        "sources": ["국가유산청"],
-        "generated_at": "",
-        "warnings": ["운영시간·요금 확인 필요"],
+        "sources": ["국가유산청 국가유산 정보 Open API"],
+        "generated_at": datetime.now(UTC).isoformat(),
+        "warnings": ["운영시간·요금·교통상황은 방문 전에 확인하세요."],
     }

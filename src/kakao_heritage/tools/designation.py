@@ -1,46 +1,65 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
+import httpx
+
+from kakao_heritage.clients.heritage_api import HeritageApiClient
 from kakao_heritage.services.designation_service import normalize_designation_type
+from kakao_heritage.services.heritage_codes import designation_code
 
 
 def find_heritage_by_designation(
     designation_type: str, designation_number: int
 ) -> dict[str, Any]:
     normalized = normalize_designation_type(designation_type)
-    if normalized == "국보" and designation_number == 10:
+    code = designation_code(normalized)
+    if not code:
         return {
-            "success": True,
-            "query": {
-                "designation_type": normalized,
-                "designation_number": designation_number,
+            "success": False,
+            "error": {
+                "code": "UNSUPPORTED_DESIGNATION_TYPE",
+                "message": f"지원하지 않는 지정 종목입니다: {designation_type}",
+                "recoverable": True,
+                "required_input": ["올바른 designation_type"],
             },
-            "data": {
-                "results": [
-                    {
-                        "name": "국보 제10호 석굴암",
-                        "designation_type": "국보",
-                        "designation_number": 10,
-                        "address": "경상북도 경주시",
-                        "latitude": 35.8,
-                        "longitude": 129.33,
-                        "summary": "국보 제10호",
-                    }
-                ]
+        }
+    try:
+        summary = HeritageApiClient().find_by_designation(code, designation_number)
+        detail = (
+            HeritageApiClient().get_detail(str(summary["heritage_id"]))
+            if summary
+            else None
+        )
+    except httpx.HTTPError:
+        return {
+            "success": False,
+            "error": {
+                "code": "HERITAGE_API_UNAVAILABLE",
+                "message": "국가유산청 API에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+                "recoverable": True,
+                "required_input": [],
             },
-            "summary_markdown": "",
-            "sources": ["국가유산청"],
-            "generated_at": "",
-            "warnings": [],
+        }
+    if not summary:
+        return {
+            "success": False,
+            "error": {
+                "code": "NOT_FOUND",
+                "message": "해당 지정 종목과 번호로 확인되는 국가유산을 찾지 못했습니다.",
+                "recoverable": True,
+                "required_input": ["designation_type", "designation_number"],
+            },
         }
     return {
-        "success": False,
-        "error": {
-            "code": "NOT_FOUND",
-            "message": "해당 지정 종목과 번호로 확인되는 국가유산을 찾지 못했습니다.",
-            "recoverable": True,
-            "required_input": ["designation_type", "designation_number"],
+        "success": True,
+        "query": {
+            "designation_type": normalized,
+            "designation_number": designation_number,
         },
-        "generated_at": "",
+        "data": {"results": [detail or summary]},
+        "sources": ["국가유산청 국가유산 정보 Open API"],
+        "generated_at": datetime.now(UTC).isoformat(),
+        "warnings": [],
     }

@@ -1,6 +1,14 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 from typing import Any
+
+import httpx
+
+from kakao_heritage.clients.heritage_api import HeritageApiClient
+from kakao_heritage.services.designation_service import normalize_designation_type
+from kakao_heritage.services.heritage_codes import city_code, designation_code
 
 
 def search_heritage(
@@ -10,26 +18,74 @@ def search_heritage(
     period: str | None = None,
     limit: int = 10,
 ) -> dict[str, Any]:
+    limit = max(1, min(limit, 20))
+    normalized_type = normalize_designation_type(designation_type)
+    try:
+        results = HeritageApiClient().get_list(
+            name=query,
+            designation_code=designation_code(normalized_type),
+            city_code=city_code(region),
+            page_unit=1000 if region else limit,
+        )
+    except httpx.HTTPError:
+        return {
+            "success": False,
+            "error": {
+                "code": "HERITAGE_API_UNAVAILABLE",
+                "message": "국가유산청 API에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+                "recoverable": True,
+                "required_input": [],
+            },
+        }
+    if region:
+        region_text = region.replace(" ", "")
+        results = [
+            item
+            for item in results
+            if region_text
+            in " ".join(
+                str(item.get(key) or "")
+                for key in ("city", "district", "address", "name")
+            ).replace(" ", "")
+        ]
+    if period:
+        try:
+            candidates = results[: min(max(limit * 3, 10), 30)]
+            with ThreadPoolExecutor(max_workers=min(10, len(candidates) or 1)) as pool:
+                details = list(
+                    pool.map(
+                        lambda item: HeritageApiClient().get_detail(
+                            str(item.get("heritage_id") or "")
+                        ),
+                        candidates,
+                    )
+                )
+        except httpx.HTTPError:
+            return {
+                "success": False,
+                "error": {
+                    "code": "HERITAGE_API_UNAVAILABLE",
+                    "message": "시대별 상세 정보를 조회하는 중 국가유산청 API 연결에 실패했습니다.",
+                    "recoverable": True,
+                    "required_input": [],
+                },
+            }
+        results = [
+            detail
+            for detail in details
+            if detail and period in str(detail.get("period") or "")
+        ]
     return {
         "success": True,
         "query": {
             "query": query,
             "region": region,
-            "designation_type": designation_type,
+            "designation_type": normalized_type,
             "period": period,
             "limit": limit,
         },
-        "data": {
-            "results": [
-                {
-                    "name": "불국사",
-                    "address": "경상북도 경주시",
-                    "designation_type": "사적",
-                }
-            ]
-        },
-        "summary_markdown": "",
-        "sources": ["국가유산청"],
-        "generated_at": "",
+        "data": {"results": results[:limit]},
+        "sources": ["국가유산청 국가유산 정보 Open API"],
+        "generated_at": datetime.now(UTC).isoformat(),
         "warnings": [],
     }

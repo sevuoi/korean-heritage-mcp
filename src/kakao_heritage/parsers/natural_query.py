@@ -3,6 +3,53 @@ from __future__ import annotations
 import re
 from typing import Any
 
+REGIONS = (
+    "서울",
+    "부산",
+    "대구",
+    "인천",
+    "광주",
+    "대전",
+    "울산",
+    "세종",
+    "경기",
+    "강원",
+    "충북",
+    "충남",
+    "전북",
+    "전남",
+    "경북",
+    "경남",
+    "제주",
+    "경주",
+    "부여",
+    "공주",
+)
+PERIODS = ("선사", "삼국", "고구려", "백제", "신라", "통일신라", "고려", "조선", "근대")
+
+
+def _first_match(text: str, values: tuple[str, ...]) -> str | None:
+    return next((value for value in values if value in text), None)
+
+
+def _base(intent: str, text: str) -> dict[str, Any]:
+    theme = next(
+        (
+            value
+            for value in ("궁궐", "불교", "성곽", "왕릉", "서원", "사찰")
+            if value in text
+        ),
+        None,
+    )
+    return {
+        "intent": intent,
+        "designation_type": None,
+        "designation_number": None,
+        "region": _first_match(text, REGIONS),
+        "period": _first_match(text, PERIODS),
+        "theme": theme,
+    }
+
 
 def parse_heritage_query(query: str) -> dict[str, Any]:
     text = (query or "").strip()
@@ -35,53 +82,15 @@ def parse_heritage_query(query: str) -> dict[str, Any]:
         }
 
     if re.search(r"현재 위치|근처|주변|내 주변", text):
-        return {
-            "intent": "nearby_search",
-            "designation_type": None,
-            "designation_number": None,
-            "region": None,
-            "period": None,
-            "theme": None,
-        }
+        return _base("nearby_search", text)
 
     if re.search(r"여행|계획|코스|일정", text):
-        region_match = re.search(r"([가-힣]+)\s*(?:갈 건데|여행|문화유산|유적)", text)
-        region = region_match.group(1) if region_match else None
-        return {
-            "intent": "trip_planning",
-            "designation_type": None,
-            "designation_number": None,
-            "region": region,
-            "period": None,
-            "theme": None,
-        }
+        return _base("trip_planning", text)
 
     if re.search(r"주차장|음식점|카페|관광시설", text):
-        return {
-            "intent": "facility_search",
-            "designation_type": None,
-            "designation_number": None,
-            "region": None,
-            "period": None,
-            "theme": None,
-        }
+        return _base("facility_search", text)
 
-    if re.search(r"경주|서울|부여|공주|제주", text):
-        region_match = re.search(r"([가-힣]+)", text)
-        return {
-            "intent": "regional_search",
-            "designation_type": None,
-            "designation_number": None,
-            "region": region_match.group(1) if region_match else None,
-            "period": None,
-            "theme": None,
-        }
+    if _first_match(text, REGIONS):
+        return _base("regional_search", text)
 
-    return {
-        "intent": "name_search",
-        "designation_type": None,
-        "designation_number": None,
-        "region": None,
-        "period": None,
-        "theme": None,
-    }
+    return _base("name_search", text)

@@ -22,3 +22,14 @@ def test_parse_heritage_query(
     assert result["designation_type"] == expected_type
     assert result["designation_number"] == expected_number
     assert result["region"] == expected_region
+
+
+def test_trip_query_extracts_region_period_and_theme():
+    result = parse_heritage_query(
+        "서울에서 조선 시대 궁궐을 둘러보는 하루 여행 코스를 만들어줘"
+    )
+
+    assert result["intent"] == "trip_planning"
+    assert result["region"] == "서울"
+    assert result["period"] == "조선"
+    assert result["theme"] == "궁궐"

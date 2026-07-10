@@ -21,10 +21,10 @@ class Settings(BaseSettings):
     kakao_rest_api_key: str | None = Field(default=None)
 
     heritage_api_list_url: str = Field(
-        default="http://www.khs.go.kr/cha/SearchKindOpenapiList.do"
+        default="https://www.khs.go.kr/cha/SearchKindOpenapiList.do"
     )
     heritage_api_detail_url: str = Field(
-        default="http://www.khs.go.kr/cha/SearchKindOpenapiDt.do"
+        default="https://www.khs.go.kr/cha/SearchKindOpenapiDt.do"
     )
     heritage_api_timeout_seconds: int = Field(default=15)
     kakao_api_timeout_seconds: int = Field(default=10)

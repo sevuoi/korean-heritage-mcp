@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from kakao_heritage.utils.map_links import build_map_link
+
 
 def create_trip_plan(
     region: str,
@@ -18,37 +20,38 @@ def create_trip_plan(
         if name and name not in seen:
             deduped.append(item)
             seen.add(name)
-    selected = deduped[:max_places_per_day]
-    stops = []
-    for index, item in enumerate(selected, start=1):
-        stops.append(
+    days = max(1, min(days, 7))
+    max_places_per_day = max(1, min(max_places_per_day, 10))
+    selected = deduped[: days * max_places_per_day]
+    itinerary = []
+    for day in range(1, days + 1):
+        day_items = selected[(day - 1) * max_places_per_day : day * max_places_per_day]
+        stops = []
+        for index, item in enumerate(day_items, start=1):
+            name = str(item.get("name") or "")
+            stops.append(
+                {
+                    "order": index,
+                    "heritage": item,
+                    "recommended_duration_minutes": 60,
+                    "travel_minutes_from_previous": 20 if index > 1 else 0,
+                    "travel_time_is_estimate": True,
+                    "visit_note": "운영시간과 관람 조건은 방문 전 확인하세요.",
+                    "map_url": build_map_link(name),
+                }
+            )
+        itinerary.append(
             {
-                "order": index,
-                "heritage": {
-                    "name": item.get("name"),
-                    "address": item.get("address"),
-                    "latitude": item.get("latitude"),
-                    "longitude": item.get("longitude"),
-                    "designation_type": item.get("designation_type"),
-                },
-                "recommended_duration_minutes": 60,
-                "travel_minutes_from_previous": 20 if index > 1 else 0,
-                "travel_time_is_estimate": True,
-                "visit_note": "추천 관람시간",
-                "map_url": "https://map.kakao.com/",
+                "day": day,
+                "title": f"{region} 문화유산 일정 {day}일차",
+                "stops": stops,
+                "meal_area": region,
+                "parking_notes": ["개별 방문지의 최신 주차 정보를 확인하세요."],
+                "travel_notes": ["이동시간은 실제 교통상황에 따라 달라집니다."],
             }
         )
     return {
         "region": region,
         "days": days,
-        "itinerary": [
-            {
-                "day": 1,
-                "title": f"{region} 문화유산 일정",
-                "stops": stops,
-                "meal_area": region,
-                "parking_notes": ["주차장 확인 필요"],
-                "travel_notes": ["예상 이동시간 포함"],
-            }
-        ],
+        "itinerary": itinerary,
     }
