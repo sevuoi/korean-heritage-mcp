@@ -78,9 +78,11 @@ def test_all_tools_return_common_structure(monkeypatch):
 
     designation = find_heritage_by_designation("국보", 24)
     assert designation["success"] is True
+    assert "/link/map/" in designation["data"]["results"][0]["map_url"]
 
     detail = get_heritage_detail(name="석굴암")
     assert detail["success"] is True
+    assert "/link/map/" in detail["data"]["heritage"]["map_url"]
 
     trip = plan_heritage_trip(region="경주")
     assert trip["success"] is True
@@ -97,3 +99,4 @@ def test_all_tools_return_common_structure(monkeypatch):
 
     search = search_heritage(query="석굴암")
     assert search["success"] is True
+    assert "/link/map/" in search["data"]["results"][0]["map_url"]

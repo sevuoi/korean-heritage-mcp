@@ -17,6 +17,7 @@ from kakao_heritage.services.heritage_codes import (
     region_heritage_terms,
     region_search_terms,
 )
+from kakao_heritage.utils.map_links import build_map_link
 
 GENERIC_RECOMMENDATION_TERMS = (
     "추천해줘",
@@ -74,6 +75,12 @@ def _compact_result(item: dict[str, Any]) -> dict[str, Any]:
     description = str(item.get("description") or "").strip()
     if description:
         result["description_summary"] = description[:300]
+    result["map_url"] = build_map_link(
+        str(item.get("name") or "국가유산"),
+        latitude=item.get("latitude"),
+        longitude=item.get("longitude"),
+        address=item.get("address"),
+    )
     return result
 
 

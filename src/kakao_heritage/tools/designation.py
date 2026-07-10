@@ -8,6 +8,7 @@ import httpx
 from kakao_heritage.clients.heritage_api import HeritageApiClient
 from kakao_heritage.services.designation_service import normalize_designation_type
 from kakao_heritage.services.heritage_codes import designation_code
+from kakao_heritage.utils.map_links import build_map_link
 
 
 def find_heritage_by_designation(
@@ -52,13 +53,20 @@ def find_heritage_by_designation(
                 "required_input": ["designation_type", "designation_number"],
             },
         }
+    result = detail or summary
+    result["map_url"] = build_map_link(
+        str(result.get("name") or "국가유산"),
+        latitude=result.get("latitude"),
+        longitude=result.get("longitude"),
+        address=result.get("address"),
+    )
     return {
         "success": True,
         "query": {
             "designation_type": normalized,
             "designation_number": designation_number,
         },
-        "data": {"results": [detail or summary]},
+        "data": {"results": [result]},
         "sources": ["국가유산청 국가유산 정보 Open API"],
         "generated_at": datetime.now(UTC).isoformat(),
         "warnings": [],
