@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from kakao_heritage.clients.heritage_api import HeritageApiClient
+from kakao_heritage.parsers.natural_query import parse_heritage_query
 from kakao_heritage.services.designation_service import normalize_designation_type
 from kakao_heritage.services.distance_service import haversine_km
 from kakao_heritage.services.heritage_codes import (
@@ -16,6 +17,42 @@ from kakao_heritage.services.heritage_codes import (
     region_heritage_terms,
     region_search_terms,
 )
+
+GENERIC_RECOMMENDATION_TERMS = (
+    "추천해줘",
+    "추천",
+    "가볼만한곳",
+    "가볼만한",
+    "볼만한곳",
+    "볼만한",
+    "유명한곳",
+    "유명한",
+    "문화유산",
+    "문화재",
+)
+
+
+def _interpret_query(
+    query: str | None, region: str | None, period: str | None
+) -> tuple[str | None, str | None, str | None]:
+    if not query:
+        return query, region, period
+    parsed = parse_heritage_query(query)
+    region = region or parsed.get("region")
+    period = period or parsed.get("period")
+    compact = query.replace(" ", "")
+    is_generic = compact in GENERIC_RECOMMENDATION_TERMS or any(
+        compact.endswith(term) for term in GENERIC_RECOMMENDATION_TERMS
+    )
+    if not is_generic:
+        return query, region, period
+    for term in GENERIC_RECOMMENDATION_TERMS:
+        compact = compact.replace(term, "")
+    for value in (region, period):
+        if value:
+            compact = compact.replace(str(value).replace(" ", ""), "")
+    compact = compact.strip(".,!?·-_")
+    return compact or None, region, period
 
 
 def _compact_result(item: dict[str, Any]) -> dict[str, Any]:
@@ -47,14 +84,25 @@ def search_heritage(
     period: str | None = None,
     limit: int = 10,
 ) -> dict[str, Any]:
+    original_query = query
+    query, region, period = _interpret_query(query, region, period)
     if not any((query, region, designation_type, period)):
         return {
             "success": False,
             "error": {
-                "code": "SEARCH_CONDITION_REQUIRED",
-                "message": "이름, 지역, 시대 또는 지정종목 중 하나를 입력해 주세요.",
+                "code": "RECOMMENDATION_CONTEXT_REQUIRED"
+                if original_query
+                else "SEARCH_CONDITION_REQUIRED",
+                "message": (
+                    "어느 지역이나 시대의 국가유산을 추천할지 알려주세요. "
+                    "예: 경주 신라 문화유산, 서울 조선 궁궐"
+                    if original_query
+                    else "이름, 지역, 시대 또는 지정종목 중 하나를 입력해 주세요."
+                ),
                 "recoverable": True,
-                "required_input": ["query, region, designation_type 또는 period"],
+                "required_input": [
+                    "region, period, designation_type 또는 구체적인 이름"
+                ],
             },
         }
     limit = max(1, min(limit, 20))
@@ -156,6 +204,7 @@ def search_heritage(
         "success": True,
         "query": {
             "query": query,
+            "original_query": original_query,
             "region": region,
             "designation_type": normalized_type,
             "period": period,

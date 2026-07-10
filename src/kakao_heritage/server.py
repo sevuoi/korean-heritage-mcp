@@ -76,7 +76,8 @@ def find_nearby_heritage_tool(
     title="Search Korean heritage",
     description=(
         "Searches Korean national heritage by name, region, period, designation, "
-        "or theme with K-Heritage Guide(한국유산길잡이)."
+        "or theme with K-Heritage Guide(한국유산길잡이). Do not use generic words "
+        "such as recommendation as a heritage name; ask for region or theme context."
     ),
     annotations=_read_only_annotations("Search Korean heritage"),
 )

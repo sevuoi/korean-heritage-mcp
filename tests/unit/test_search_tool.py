@@ -16,6 +16,43 @@ def test_search_rejects_unknown_designation_type():
     assert result["error"]["code"] == "UNSUPPORTED_DESIGNATION_TYPE"
 
 
+def test_generic_recommendation_asks_for_context():
+    result = search_heritage(query="추천")
+
+    assert result["success"] is False
+    assert result["error"]["code"] == "RECOMMENDATION_CONTEXT_REQUIRED"
+
+
+def test_regional_recommendation_does_not_search_recommendation_as_name(monkeypatch):
+    captured = {}
+
+    def fake_list(self, **kwargs):
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr(HeritageApiClient, "get_list", fake_list)
+
+    result = search_heritage(query="경주 문화유산 추천")
+
+    assert result["success"] is True
+    assert result["query"]["region"] == "경주"
+    assert captured["name"] is None
+
+
+def test_real_heritage_name_containing_recommendation_word_is_preserved(monkeypatch):
+    captured = {}
+
+    def fake_list(self, **kwargs):
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr(HeritageApiClient, "get_list", fake_list)
+
+    search_heritage(query="추천대")
+
+    assert captured["name"] == "추천대"
+
+
 def test_region_filter_uses_address_not_heritage_name(monkeypatch):
     monkeypatch.setattr(
         HeritageApiClient,
