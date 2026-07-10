@@ -110,7 +110,12 @@ def find_nearby_heritage(
                     {
                         "heritage": item,
                         "distance_km": distance,
-                        "map_url": build_map_link(str(item.get("name") or "")),
+                        "map_url": build_map_link(
+                            str(item.get("name") or ""),
+                            latitude=float(item_latitude),
+                            longitude=float(item_longitude),
+                            address=item.get("address"),
+                        ),
                     }
                 )
         results.sort(key=lambda entry: float(entry["distance_km"]))
@@ -120,7 +125,9 @@ def find_nearby_heritage(
             {
                 "heritage": item,
                 "distance_km": None,
-                "map_url": build_map_link(str(item.get("name") or "")),
+                "map_url": build_map_link(
+                    str(item.get("name") or ""), address=item.get("address")
+                ),
             }
             for item in filtered_items[:max_results]
         ]

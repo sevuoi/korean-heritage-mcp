@@ -25,6 +25,8 @@ class HeritageItem(BaseModel):
     address: str | None = None
     city: str | None = None
     district: str | None = None
+    owner: str | None = None
+    manager: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     summary: str | None = None
@@ -64,6 +66,8 @@ class NearbyFacility(BaseModel):
 
 class TripStop(BaseModel):
     order: int
+    visit_place: str
+    featured_heritage: list[str] = Field(default_factory=list)
     heritage: HeritageItem
     recommended_duration_minutes: int
     travel_minutes_from_previous: int | None = None

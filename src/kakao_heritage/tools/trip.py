@@ -20,14 +20,15 @@ def plan_heritage_trip(
     max_places_per_day: int = 5,
 ) -> dict[str, Any]:
     result_limit = max(1, min(days * max_places_per_day, 20))
+    candidate_limit = min(result_limit * 4, 20)
     search_result = search_heritage(
-        query=themes[0] if themes else None, region=region, limit=result_limit
+        query=themes[0] if themes else None, region=region, limit=candidate_limit
     )
     if not search_result.get("success"):
         return search_result
     heritage_items = search_result.get("data", {}).get("results", [])
     if not heritage_items and themes:
-        search_result = search_heritage(region=region, limit=result_limit)
+        search_result = search_heritage(region=region, limit=candidate_limit)
         heritage_items = search_result.get("data", {}).get("results", [])
     plan = create_trip_plan(
         region=region,
