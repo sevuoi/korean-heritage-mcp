@@ -28,13 +28,14 @@ python -m kakao_heritage
 ## PlayMCP compatibility
 
 - Streamable HTTP endpoint at `/mcp`
-- Eight read-only, non-destructive, idempotent tools
+- Six read-only, non-destructive, idempotent tools
 - Explicit PlayMCP tool annotations and English tool descriptions
 - Tool and server names do not include reserved platform branding
 
 ## Data configuration
 
 National heritage search and detail tools use the public National Heritage
-Administration XML API without a service key. Set `KAKAO_REST_API_KEY` as a
-server-side PlayMCP environment secret to enable place resolution, nearby
-search, and nearby facility lookup.
+Administration XML API without a service key. Nearby search accepts coordinates
+and region context from a map tool. An optional server-side `KAKAO_REST_API_KEY`
+allows this server to resolve a place name directly, but is not required when a
+map tool supplies latitude, longitude, and region.

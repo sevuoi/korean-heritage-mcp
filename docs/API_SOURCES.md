@@ -14,6 +14,8 @@
 
 ## Kakao Local API
 
-Set `KAKAO_REST_API_KEY` in the PlayMCP server environment. It is required for
-place resolution, coordinate-to-region lookup, nearby heritage, and facility
-search. The key is a server secret and must not be committed to Git.
+The public MCP surface delegates place resolution, directions, and facility
+search to a map tool. Nearby heritage accepts latitude, longitude, and region
+context from that tool, so a Kakao key is not required. `KAKAO_REST_API_KEY` is
+only an optional server-side fallback for direct place-name resolution and must
+never be committed to Git.

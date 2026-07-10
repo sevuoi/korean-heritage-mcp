@@ -5,8 +5,6 @@ from fastmcp import FastMCP
 from kakao_heritage.config import settings
 from kakao_heritage.tools.designation import find_heritage_by_designation
 from kakao_heritage.tools.detail import get_heritage_detail
-from kakao_heritage.tools.facilities import find_heritage_facilities
-from kakao_heritage.tools.location import resolve_location
 from kakao_heritage.tools.nearby import find_nearby_heritage
 from kakao_heritage.tools.query_parser import parse_heritage_query_tool
 from kakao_heritage.tools.search import search_heritage
@@ -36,8 +34,10 @@ def _read_only_annotations(
 @mcp.tool(
     title="Find nearby Korean heritage",
     description=(
-        "Finds national heritage sites near coordinates or a place name with "
-        "K-Heritage Guide(한국유산길잡이), ordered by distance."
+        "Finds national heritage sites with K-Heritage Guide(한국유산길잡이). "
+        "For exact distance ordering, first use a map tool to resolve the place, "
+        "then pass latitude, longitude, and region. If only a region is available, "
+        "returns a regional fallback without claiming exact distances."
     ),
     annotations=_read_only_annotations("Find nearby Korean heritage"),
 )
@@ -45,22 +45,30 @@ def find_nearby_heritage_tool(
     latitude: float | None = None,
     longitude: float | None = None,
     location: str | None = None,
+    region: str | None = None,
     radius_km: float = 10.0,
     designation_types: list[str] | None = None,
     period: str | None = None,
     limit: int = 10,
 ) -> dict:
-    """위도·경도 또는 장소명을 기준으로 일정 반경 안의 국가유산을 거리순으로 찾습니다. 사용자가 '지금 있는 곳 근처 문화유산' 또는 '서울역 주변 국보'처럼 요청할 때 사용합니다. 좌표와 장소명이 모두 없으면 위치 입력이 필요하다는 결과를 반환합니다.
+    """지도 도구가 확인한 좌표와 지역을 기준으로 주변 국가유산을 찾습니다.
 
     언제 사용하는지: 현재 위치 주변 문화유산 검색이 필요할 때.
     언제 사용하지 않는지: 정확한 지정번호 검색이나 여행계획 생성이 필요할 때.
-    필수 입력: location 또는 latitude/longitude 중 하나.
-    선택 입력: radius_km, designation_types, period, limit.
+    필수 입력: latitude/longitude 또는 region 중 하나.
+    선택 입력: location, radius_km, designation_types, period, limit.
     반환 내용: 기준 위치, 검색 반경, 거리순 문화유산 목록, 카카오맵 링크, 출처.
     오류 상황: 좌표가 불완전하거나 위치가 비어 있으면 LOCATION_REQUIRED를 반환합니다.
     """
     return find_nearby_heritage(
-        latitude, longitude, location, radius_km, designation_types, period, limit
+        latitude,
+        longitude,
+        location,
+        region,
+        radius_km,
+        designation_types,
+        period,
+        limit,
     )
 
 
@@ -181,55 +189,6 @@ def plan_heritage_trip_tool(
         include_parking,
         max_places_per_day,
     )
-
-
-@mcp.tool(
-    title="Find facilities near heritage",
-    description=(
-        "Finds parking, restaurants, cafes, and visitor facilities near a heritage "
-        "site with K-Heritage Guide(한국유산길잡이)."
-    ),
-    annotations=_read_only_annotations("Find facilities near heritage"),
-)
-def find_heritage_facilities_tool(
-    heritage_name: str,
-    facility_types: list[str] | None = None,
-    radius_m: int = 1500,
-    limit_per_type: int = 5,
-) -> dict:
-    """특정 문화유산 주변의 주차장, 음식점, 카페, 관광시설을 검색합니다.
-
-    언제 사용하는지: 방문 전 편의시설 정보를 확인할 때.
-    언제 사용하지 않는지: 문화유산 본문 정보만 필요할 때.
-    필수 입력: heritage_name.
-    선택 입력: facility_types, radius_m, limit_per_type.
-    반환 내용: 주변 시설 검색 결과.
-    오류 상황: 이름이 비면 빈 결과 구조를 반환합니다.
-    """
-    return find_heritage_facilities(
-        heritage_name, facility_types, radius_m, limit_per_type
-    )
-
-
-@mcp.tool(
-    title="Resolve a Korean location",
-    description=(
-        "Resolves a Korean place name or address to coordinates with K-Heritage "
-        "Guide(한국유산길잡이)."
-    ),
-    annotations=_read_only_annotations("Resolve a Korean location"),
-)
-def resolve_location_tool(location: str) -> dict:
-    """장소명이나 주소를 위도·경도로 변환합니다. 기준 위치를 찾을 때 재사용합니다.
-
-    언제 사용하는지: 위치를 좌표로 변환해야 할 때.
-    언제 사용하지 않는지: 이미 좌표가 주어진 경우.
-    필수 입력: location.
-    선택 입력: 없음.
-    반환 내용: 좌표와 주소 정보.
-    오류 상황: 위치가 비면 빈 결과 구조를 반환합니다.
-    """
-    return resolve_location(location)
 
 
 @mcp.tool(
