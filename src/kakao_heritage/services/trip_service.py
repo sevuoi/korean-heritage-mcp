@@ -19,15 +19,15 @@ def _visit_place(item: dict[str, Any]) -> str:
 
 
 def _group_key(item: dict[str, Any]) -> str:
+    latitude, longitude = item.get("latitude"), item.get("longitude")
+    if latitude is not None and longitude is not None:
+        return f"coordinate:{float(latitude):.3f},{float(longitude):.3f}"
     manager = str(item.get("manager") or "").strip()
     if manager not in GENERIC_MANAGERS and (
         manager in str(item.get("name") or "")
         or any(keyword in manager for keyword in VENUE_KEYWORDS)
     ):
         return f"manager:{manager}"
-    latitude, longitude = item.get("latitude"), item.get("longitude")
-    if latitude is not None and longitude is not None:
-        return f"coordinate:{float(latitude):.3f},{float(longitude):.3f}"
     return f"name:{item.get('name')}"
 
 
@@ -56,10 +56,27 @@ def create_trip_plan(
     heritage_items: list[dict[str, Any]] | None = None,
     days: int = 1,
     max_places_per_day: int = 5,
+    exclude_places: list[str] | None = None,
+    plan_variant: int = 1,
 ) -> dict[str, Any]:
     days = max(1, min(days, 7))
     max_places_per_day = max(1, min(max_places_per_day, 10))
-    places = _group_places(heritage_items or [])[: days * max_places_per_day]
+    excluded = {place.replace(" ", "") for place in (exclude_places or [])}
+    places = [
+        place
+        for place in _group_places(heritage_items or [])
+        if not any(
+            excluded_name in candidate.replace(" ", "")
+            for excluded_name in excluded
+            for candidate in [place["visit_place"], *place["featured_heritage"]]
+        )
+    ]
+    requested_places = days * max_places_per_day
+    if places:
+        offset = (max(1, plan_variant) - 1) * requested_places
+        if offset >= len(places):
+            offset %= len(places)
+        places = places[offset : offset + requested_places]
     itinerary = []
     for day in range(1, days + 1):
         day_places = places[(day - 1) * max_places_per_day : day * max_places_per_day]
@@ -77,8 +94,8 @@ def create_trip_plan(
                     "recommended_duration_minutes": 120
                     if len(place["featured_heritage"]) > 1
                     else 60,
-                    "travel_minutes_from_previous": 20 if index > 1 else 0,
-                    "travel_time_is_estimate": True,
+                    "travel_minutes_from_previous": None,
+                    "travel_time_is_estimate": False,
                     "visit_note": "운영시간과 전시 여부는 방문 전 확인하세요.",
                     "map_url": build_map_link(
                         visit_place,
@@ -102,5 +119,7 @@ def create_trip_plan(
         "region": region,
         "start_location": start_location,
         "days": days,
+        "plan_variant": max(1, plan_variant),
+        "excluded_places": sorted(excluded),
         "itinerary": itinerary,
     }

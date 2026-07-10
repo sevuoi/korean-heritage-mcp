@@ -11,6 +11,9 @@ async def test_all_tools_include_playmcp_metadata():
     assert {tool.name for tool in tools}.isdisjoint(
         {"resolve_location_tool", "find_heritage_facilities_tool"}
     )
+    trip_tool = next(tool for tool in tools if tool.name == "plan_heritage_trip_tool")
+    assert "exclude_places" in trip_tool.parameters["properties"]
+    assert "plan_variant" in trip_tool.parameters["properties"]
     for tool in tools:
         assert "kakao" not in tool.name.lower()
         assert tool.title

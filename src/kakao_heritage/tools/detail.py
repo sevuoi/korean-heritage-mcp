@@ -53,6 +53,12 @@ def get_heritage_detail(
                 "required_input": ["name, heritage_id 또는 지정 종목과 번호"],
             },
         }
+    warnings: list[str] = []
+    description = str(detail.get("description") or "")
+    if len(description) > 2500:
+        detail["description"] = f"{description[:2500].rstrip()}…"
+        detail["summary"] = detail["description"]
+        warnings.append("상세 설명은 응답 크기를 위해 일부만 제공합니다.")
     return {
         "success": True,
         "query": {
@@ -64,5 +70,5 @@ def get_heritage_detail(
         "data": {"heritage": detail},
         "sources": ["국가유산청 국가유산 정보 Open API"],
         "generated_at": datetime.now(UTC).isoformat(),
-        "warnings": [],
+        "warnings": warnings,
     }

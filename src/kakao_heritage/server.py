@@ -152,7 +152,8 @@ def get_heritage_detail_tool(
     title="Plan a Korean heritage trip",
     description=(
         "Creates a region-based Korean heritage itinerary with K-Heritage "
-        "Guide(한국유산길잡이), including optional food and parking context."
+        "Guide(한국유산길잡이). For a different itinerary, increment plan_variant "
+        "or pass previous visit places in exclude_places."
     ),
     annotations=_read_only_annotations("Plan a Korean heritage trip"),
 )
@@ -167,13 +168,15 @@ def plan_heritage_trip_tool(
     include_food: bool = True,
     include_parking: bool = True,
     max_places_per_day: int = 5,
+    exclude_places: list[str] | None = None,
+    plan_variant: int = 1,
 ) -> dict:
     """특정 지역의 문화유산 정보와 여행 일정을 함께 작성합니다. 경주, 서울, 부여 같은 지역 입력에 사용합니다.
 
     언제 사용하는지: 지역별 문화유산 여행 계획이 필요할 때.
     언제 사용하지 않는지: 단순 검색만 필요할 때.
     필수 입력: region.
-    선택 입력: start_location, days, transport, themes, companions, pace, include_food, include_parking, max_places_per_day.
+    선택 입력: start_location, days, transport, themes, companions, pace, include_food, include_parking, max_places_per_day, exclude_places, plan_variant.
     반환 내용: 지역 개요, 추천 유산, 하루별 일정, 주차/음식 정보, 확인 필요 사항.
     오류 상황: 지역명이 비어 있으면 빈 결과 구조를 반환합니다.
     """
@@ -188,6 +191,8 @@ def plan_heritage_trip_tool(
         include_food,
         include_parking,
         max_places_per_day,
+        exclude_places,
+        plan_variant,
     )
 
 

@@ -67,3 +67,37 @@ def test_trip_plan_groups_museum_objects_as_one_visit():
         "청자 어룡형 주전자",
     ]
     assert "/link/map/" in stop["map_url"]
+
+
+def test_trip_plan_supports_alternative_and_excluded_places():
+    items = [
+        {
+            "name": f"문화유산 {index}",
+            "latitude": 35.0 + index / 100,
+            "longitude": 129.0,
+        }
+        for index in range(1, 7)
+    ]
+
+    first = create_trip_plan(
+        region="경주", heritage_items=items, max_places_per_day=2, plan_variant=1
+    )
+    second = create_trip_plan(
+        region="경주", heritage_items=items, max_places_per_day=2, plan_variant=2
+    )
+    excluded = create_trip_plan(
+        region="경주",
+        heritage_items=items,
+        max_places_per_day=2,
+        exclude_places=["문화유산 1"],
+    )
+
+    first_names = [stop["visit_place"] for stop in first["itinerary"][0]["stops"]]
+    second_names = [stop["visit_place"] for stop in second["itinerary"][0]["stops"]]
+    excluded_names = [stop["visit_place"] for stop in excluded["itinerary"][0]["stops"]]
+    assert first_names != second_names
+    assert "문화유산 1" not in excluded_names
+    assert all(
+        stop["travel_minutes_from_previous"] is None
+        for stop in first["itinerary"][0]["stops"]
+    )

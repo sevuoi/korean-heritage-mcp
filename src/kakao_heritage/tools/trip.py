@@ -18,7 +18,11 @@ def plan_heritage_trip(
     include_food: bool = True,
     include_parking: bool = True,
     max_places_per_day: int = 5,
+    exclude_places: list[str] | None = None,
+    plan_variant: int = 1,
 ) -> dict[str, Any]:
+    if pace in {"slow", "relaxed", "느림", "여유"}:
+        max_places_per_day = min(max_places_per_day, 3)
     result_limit = max(1, min(days * max_places_per_day, 20))
     candidate_limit = min(result_limit * 4, 20)
     search_result = search_heritage(
@@ -36,6 +40,8 @@ def plan_heritage_trip(
         heritage_items=heritage_items,
         days=days,
         max_places_per_day=max_places_per_day,
+        exclude_places=exclude_places,
+        plan_variant=plan_variant,
     )
     return {
         "success": True,
@@ -48,6 +54,8 @@ def plan_heritage_trip(
             "pace": pace,
             "include_food": include_food,
             "include_parking": include_parking,
+            "exclude_places": exclude_places,
+            "plan_variant": plan_variant,
         },
         "data": plan,
         "sources": ["국가유산청 국가유산 정보 Open API"],

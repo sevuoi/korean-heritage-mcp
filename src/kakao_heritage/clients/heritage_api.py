@@ -1,14 +1,27 @@
 from __future__ import annotations
 
+from copy import deepcopy
+from threading import Lock
+from time import monotonic
 from typing import Any
 
 import httpx
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from kakao_heritage.config import settings
 from kakao_heritage.parsers.heritage_xml import (
     parse_heritage_detail_xml,
     parse_heritage_list_xml,
 )
+
+_CACHE_LOCK = Lock()
+_LIST_CACHE: dict[tuple[Any, ...], tuple[float, list[dict[str, Any]]]] = {}
+_DETAIL_CACHE: dict[str, tuple[float, dict[str, Any] | None]] = {}
 
 
 class HeritageApiClient:
@@ -17,6 +30,12 @@ class HeritageApiClient:
     def __init__(self, client: httpx.Client | None = None) -> None:
         self._client = client
 
+    @retry(
+        retry=retry_if_exception_type(httpx.TransportError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.1, min=0.1, max=1),
+        reraise=True,
+    )
     def _get(self, url: str, params: dict[str, str]) -> httpx.Response:
         if self._client is not None:
             response = self._client.get(url, params=params)
@@ -36,6 +55,20 @@ class HeritageApiClient:
         page_unit: int = 100,
         page_index: int = 1,
     ) -> list[dict[str, Any]]:
+        cache_key = (
+            settings.heritage_api_list_url,
+            name,
+            designation_code,
+            city_code,
+            period,
+            page_unit,
+            page_index,
+        )
+        if self._client is None:
+            with _CACHE_LOCK:
+                cached = _LIST_CACHE.get(cache_key)
+                if cached and cached[0] > monotonic():
+                    return deepcopy(cached[1])
         params = {
             "pageUnit": str(max(1, min(page_unit, 1000))),
             "pageIndex": str(max(1, page_index)),
@@ -50,7 +83,14 @@ class HeritageApiClient:
         if period:
             params["ccbaPcd1"] = period
         response = self._get(settings.heritage_api_list_url, params)
-        return [item.model_dump() for item in parse_heritage_list_xml(response.text)]
+        results = [item.model_dump() for item in parse_heritage_list_xml(response.text)]
+        if self._client is None:
+            with _CACHE_LOCK:
+                _LIST_CACHE[cache_key] = (
+                    monotonic() + settings.heritage_list_cache_ttl_seconds,
+                    deepcopy(results),
+                )
+        return results
 
     def find_by_designation(
         self, designation_code: str, designation_number: int
@@ -69,6 +109,11 @@ class HeritageApiClient:
         return None
 
     def get_detail(self, heritage_id: str) -> dict[str, Any] | None:
+        if self._client is None:
+            with _CACHE_LOCK:
+                cached = _DETAIL_CACHE.get(heritage_id)
+                if cached and cached[0] > monotonic():
+                    return deepcopy(cached[1])
         parts = heritage_id.split("-", 2)
         if len(parts) != 3 or not all(parts):
             return None
@@ -77,7 +122,14 @@ class HeritageApiClient:
             {"ccbaKdcd": parts[0], "ccbaAsno": parts[1], "ccbaCtcd": parts[2]},
         )
         item = parse_heritage_detail_xml(response.text)
-        return item.model_dump() if item else None
+        result = item.model_dump() if item else None
+        if self._client is None:
+            with _CACHE_LOCK:
+                _DETAIL_CACHE[heritage_id] = (
+                    monotonic() + settings.heritage_detail_cache_ttl_seconds,
+                    deepcopy(result),
+                )
+        return result
 
     def search_first(self, name: str) -> dict[str, Any] | None:
         items = self.get_list(name=name, page_unit=20)

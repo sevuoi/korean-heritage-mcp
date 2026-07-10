@@ -48,6 +48,12 @@ def _designation_number(management_number: str | None) -> int | None:
     return int(digits[:6] if len(digits) >= 13 else digits)
 
 
+def _secure_url(value: str | None) -> str | None:
+    if value and value.startswith("http://"):
+        return f"https://{value.removeprefix('http://')}"
+    return value
+
+
 def _identifier(data: dict[str, Any]) -> HeritageIdentifier:
     designation_code = _read_first(data, "ccbaKdcd")
     management_number = _read_first(data, "ccbaAsno")
@@ -129,7 +135,7 @@ def parse_heritage_detail_xml(xml_text: str) -> HeritageItem | None:
         longitude=_float_or_none(_read_first(root, "longitude")),
         summary=_read_first(item, "content"),
         description=_read_first(item, "content"),
-        image_url=_read_first(item, "imageUrl"),
+        image_url=_secure_url(_read_first(item, "imageUrl")),
         source_name="국가유산청",
         raw_identifiers=identifier,
     )

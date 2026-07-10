@@ -11,6 +11,28 @@ from kakao_heritage.services.designation_service import normalize_designation_ty
 from kakao_heritage.services.heritage_codes import city_code, designation_code
 
 
+def _compact_result(item: dict[str, Any]) -> dict[str, Any]:
+    keys = (
+        "heritage_id",
+        "name",
+        "designation_type",
+        "designation_number",
+        "period",
+        "address",
+        "city",
+        "district",
+        "manager",
+        "latitude",
+        "longitude",
+        "image_url",
+    )
+    result = {key: item.get(key) for key in keys if item.get(key) is not None}
+    description = str(item.get("description") or "").strip()
+    if description:
+        result["description_summary"] = description[:300]
+    return result
+
+
 def search_heritage(
     query: str | None = None,
     region: str | None = None,
@@ -18,12 +40,33 @@ def search_heritage(
     period: str | None = None,
     limit: int = 10,
 ) -> dict[str, Any]:
+    if not any((query, region, designation_type, period)):
+        return {
+            "success": False,
+            "error": {
+                "code": "SEARCH_CONDITION_REQUIRED",
+                "message": "이름, 지역, 시대 또는 지정종목 중 하나를 입력해 주세요.",
+                "recoverable": True,
+                "required_input": ["query, region, designation_type 또는 period"],
+            },
+        }
     limit = max(1, min(limit, 20))
     normalized_type = normalize_designation_type(designation_type)
+    normalized_code = designation_code(normalized_type)
+    if designation_type and not normalized_code:
+        return {
+            "success": False,
+            "error": {
+                "code": "UNSUPPORTED_DESIGNATION_TYPE",
+                "message": f"지원하지 않는 지정 종목입니다: {designation_type}",
+                "recoverable": True,
+                "required_input": ["국보, 보물, 사적 등 올바른 지정종목"],
+            },
+        }
     try:
         results = HeritageApiClient().get_list(
             name=query,
-            designation_code=designation_code(normalized_type),
+            designation_code=normalized_code,
             city_code=city_code(region),
             page_unit=1000 if region else limit,
         )
@@ -75,6 +118,8 @@ def search_heritage(
             for detail in details
             if detail and period in str(detail.get("period") or "")
         ]
+    results = [_compact_result(item) for item in results[:limit]]
+    warnings = [] if results else ["조건에 맞는 국가유산을 찾지 못했습니다."]
     return {
         "success": True,
         "query": {
@@ -84,8 +129,8 @@ def search_heritage(
             "period": period,
             "limit": limit,
         },
-        "data": {"results": results[:limit]},
+        "data": {"results": results},
         "sources": ["국가유산청 국가유산 정보 Open API"],
         "generated_at": datetime.now(UTC).isoformat(),
-        "warnings": [],
+        "warnings": warnings,
     }
