@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Kakao Heritage: Install",
+      "type": "shell",
+      "command": "python3 -m pip install -e '.[dev]'"
+    },
+    {
+      "label": "Kakao Heritage: Run stdio",
+      "type": "shell",
+      "command": "python3 -m kakao_heritage"
+    },
+    {
+      "label": "Kakao Heritage: Run HTTP",
+      "type": "shell",
+      "command": "python3 -m kakao_heritage --transport streamable-http"
+    },
+    {
+      "label": "Kakao Heritage: Test",
+      "type": "shell",
+      "command": "pytest -q"
+    },
+    {
+      "label": "Kakao Heritage: Check",
+      "type": "shell",
+      "command": "ruff check . && ruff format --check . && mypy src && pytest -q"
+    }
+  ]
+}

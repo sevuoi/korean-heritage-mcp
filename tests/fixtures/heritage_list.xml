@@ -1,0 +1,26 @@
+<response>
+  <item>
+    <ccmaName>불국사</ccmaName>
+    <ccbaKdcd>11</ccbaKdcd>
+    <ccbaAsno>1</ccbaAsno>
+    <ccbaCtcd>37</ccbaCtcd>
+    <ccbaMnm1>불국사</ccbaMnm1>
+    <ccbaMnm2></ccbaMnm2>
+    <ccsiName>경상북도 경주시</ccsiName>
+    <ccbaCtcdNm>경상북도</ccbaCtcdNm>
+    <ccsiName>경북 경주시</ccsiName>
+    <ccbaLcad>경상북도 경주시</ccbaLcad>
+    <ccbaPcd1>1</ccbaPcd1>
+    <ccbaPcd2>1</ccbaPcd2>
+    <ccceName>불국사</ccceName>
+    <ccbaPoss>경상북도 경주시</ccbaPoss>
+    <ccbaCncl>사찰</ccbaCncl>
+    <ccbaAsno>1</ccbaAsno>
+    <ccbaKdcdNm>사적</ccbaKdcdNm>
+    <ccbaCtcdNm2>경상북도</ccbaCtcdNm2>
+    <ccbaCtcdNm3>경주시</ccbaCtcdNm3>
+    <ccbaDscr>불국사 유적</ccbaDscr>
+    <longitude>129.331</longitude>
+    <latitude>35.792</latitude>
+  </item>
+</response>

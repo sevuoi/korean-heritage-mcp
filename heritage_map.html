@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>문화유산 지도</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #map { height: 100vh; width: 100%; }
+    .leaflet-popup-content a { color: #2563eb; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const markers = [{"name": "서울 숭례문", "lat": 37.559975221378, "lng": 126.975312652739, "kakao_url": "https://map.kakao.com/link/map/37.559975221378,126.975312652739"}, {"name": "서울 원각사지 십층석탑", "lat": 37.5715461695449, "lng": 126.988207994364, "kakao_url": "https://map.kakao.com/link/map/37.5715461695449,126.988207994364"}, {"name": "서울 북한산 신라 진흥왕 순수비", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "청자 사자형뚜껑 향로", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "청자 어룡형 주전자", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "청자 기린형뚜껑 향로", "lat": 37.5946, "lng": 126.9967, "kakao_url": "https://map.kakao.com/link/map/37.5946,126.9967"}, {"name": "청자 상감연지원앙문 정병", "lat": 37.589116, "lng": 127.0182146, "kakao_url": "https://map.kakao.com/link/map/37.589116,127.0182146"}, {"name": "청자 상감운학문 매병", "lat": 37.589116, "lng": 127.0182146, "kakao_url": "https://map.kakao.com/link/map/37.589116,127.0182146"}, {"name": "훈민정음", "lat": 37.589116, "lng": 127.0182146, "kakao_url": "https://map.kakao.com/link/map/37.589116,127.0182146"}, {"name": "동국정운 권1, 6", "lat": 37.589116, "lng": 127.0182146, "kakao_url": "https://map.kakao.com/link/map/37.589116,127.0182146"}, {"name": "금동계미명삼존불입상", "lat": 37.589116, "lng": 127.0182146, "kakao_url": "https://map.kakao.com/link/map/37.589116,127.0182146"}, {"name": "금동삼존불감", "lat": 37.589116, "lng": 127.0182146, "kakao_url": "https://map.kakao.com/link/map/37.589116,127.0182146"}, {"name": "청자 오리모양 연적", "lat": 37.589116, "lng": 127.0182146, "kakao_url": "https://map.kakao.com/link/map/37.589116,127.0182146"}, {"name": "금동미륵보살반가사유상(1962-1)", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "경주 구황동 금제여래좌상", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "경주 구황동 금제여래입상", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "경주 감산사 석조미륵보살입상", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "경주 감산사 석조아미타여래입상", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "금동미륵보살반가사유상(1962-2)", "lat": 37.5240413763397, "lng": 126.980350241652, "kakao_url": "https://map.kakao.com/link/map/37.5240413763397,126.980350241652"}, {"name": "금동신묘명삼존불입상", "lat": 37.5384272, "lng": 126.9654442, "kakao_url": "https://map.kakao.com/link/map/37.5384272,126.9654442"}];
+    const map = L.map('map').setView([37.55523664889901, 126.99381596109856], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    markers.forEach((item) => {
+      const marker = L.marker([item.lat, item.lng]).addTo(map);
+      marker.bindPopup(`
+        <b>${item.name}</b><br>
+        위도: ${item.lat}<br>
+        경도: ${item.lng}<br>
+        <a href="${item.kakao_url}" target="_blank">카카오맵에서 열기</a>
+      `);
+    });
+  </script>
+</body>
+</html>
