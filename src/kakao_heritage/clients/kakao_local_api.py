@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import html
+import re
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
@@ -54,6 +57,25 @@ class KakaoLocalApiClient:
         keyword_results = self.search_keyword(query, size=1)
         return keyword_results[0] if keyword_results else None
 
+    def resolve_place_url(self, url: str) -> dict[str, Any] | None:
+        """Resolve a public Kakao place URL without requiring a REST API key."""
+        parsed = urlparse(url)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or parsed.hostname != "place.map.kakao.com"
+            or not re.fullmatch(r"/\d+/?", parsed.path)
+        ):
+            return None
+        place_id = parsed.path.strip("/")
+        canonical_url = f"https://place.map.kakao.com/{place_id}"
+        if self._client is not None:
+            response = self._client.get(canonical_url)
+        else:
+            with httpx.Client(timeout=settings.kakao_api_timeout_seconds) as client:
+                response = client.get(canonical_url)
+        response.raise_for_status()
+        return parse_kakao_place_html(response.text)
+
     def region_from_coordinates(
         self, longitude: float, latitude: float
     ) -> dict[str, Any] | None:
@@ -65,3 +87,30 @@ class KakaoLocalApiClient:
             (item for item in documents if item.get("region_type") == "H"), None
         )
         return administrative or (documents[0] if documents else None)
+
+
+def parse_kakao_place_html(page: str) -> dict[str, Any] | None:
+    """Extract public place metadata embedded in a Kakao place page."""
+
+    def meta(name: str) -> str:
+        match = re.search(
+            rf'<meta\s+name=["\']{re.escape(name)}["\']\s+content=["\']([^"\']*)',
+            page,
+            flags=re.IGNORECASE,
+        )
+        return html.unescape(match.group(1)).strip() if match else ""
+
+    coordinates = re.search(
+        r"[?&]m=([+-]?\d+(?:\.\d+)?)%2C([+-]?\d+(?:\.\d+)?)",
+        page,
+        flags=re.IGNORECASE,
+    )
+    if not coordinates:
+        return None
+    longitude, latitude = coordinates.groups()
+    return {
+        "place_name": meta("twitter:title"),
+        "address_name": meta("twitter:description"),
+        "x": longitude,
+        "y": latitude,
+    }

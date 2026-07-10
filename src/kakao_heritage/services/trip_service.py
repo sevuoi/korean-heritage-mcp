@@ -8,7 +8,7 @@ VENUE_KEYWORDS = ("박물관", "미술관", "기념관", "전시관", "불국사
 GENERIC_MANAGERS = ("", "개인", "미상", "관리자")
 
 
-def _visit_place(item: dict[str, Any]) -> str:
+def visit_place_for(item: dict[str, Any]) -> str:
     name = str(item.get("name") or "문화유산")
     manager = str(item.get("manager") or "").strip()
     if manager not in GENERIC_MANAGERS and (
@@ -40,7 +40,7 @@ def _group_places(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         key = _group_key(item)
         if key not in groups:
             groups[key] = {
-                "visit_place": _visit_place(item),
+                "visit_place": visit_place_for(item),
                 "representative": item,
                 "featured_heritage": [],
             }

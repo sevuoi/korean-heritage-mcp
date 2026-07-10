@@ -8,6 +8,7 @@ import httpx
 from kakao_heritage.clients.heritage_api import HeritageApiClient
 from kakao_heritage.services.designation_service import normalize_designation_type
 from kakao_heritage.services.heritage_codes import designation_code
+from kakao_heritage.services.trip_service import visit_place_for
 from kakao_heritage.utils.map_links import build_map_link
 
 
@@ -54,8 +55,9 @@ def find_heritage_by_designation(
             },
         }
     result = detail or summary
+    result["visit_place"] = visit_place_for(result)
     result["map_url"] = build_map_link(
-        str(result.get("name") or "국가유산"),
+        result["visit_place"],
         latitude=result.get("latitude"),
         longitude=result.get("longitude"),
         address=result.get("address"),

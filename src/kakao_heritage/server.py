@@ -35,9 +35,9 @@ def _read_only_annotations(
     title="Find nearby Korean heritage",
     description=(
         "Finds national heritage sites with K-Heritage Guide(한국유산길잡이). "
-        "For exact distance ordering, first use a map tool to resolve the place, "
-        "then pass latitude, longitude, and region. If only a region is available, "
-        "returns a regional fallback without claiming exact distances."
+        "For exact distance ordering, first use Kakao Map SearchPlaceByKeywordOpen, "
+        "then pass its place.map.kakao.com URL as map_place_url with the location; "
+        "or pass latitude, longitude, and region directly."
     ),
     annotations=_read_only_annotations("Find nearby Korean heritage"),
 )
@@ -46,6 +46,7 @@ def find_nearby_heritage_tool(
     longitude: float | None = None,
     location: str | None = None,
     region: str | None = None,
+    map_place_url: str | None = None,
     radius_km: float = 10.0,
     designation_types: list[str] | None = None,
     period: str | None = None,
@@ -65,6 +66,7 @@ def find_nearby_heritage_tool(
         longitude,
         location,
         region,
+        map_place_url,
         radius_km,
         designation_types,
         period,

@@ -8,6 +8,7 @@ import httpx
 from kakao_heritage.clients.heritage_api import HeritageApiClient
 from kakao_heritage.services.designation_service import normalize_designation_type
 from kakao_heritage.services.heritage_codes import designation_code
+from kakao_heritage.services.trip_service import visit_place_for
 from kakao_heritage.utils.map_links import build_map_link
 
 
@@ -60,8 +61,9 @@ def get_heritage_detail(
         detail["description"] = f"{description[:2500].rstrip()}…"
         detail["summary"] = detail["description"]
         warnings.append("상세 설명은 응답 크기를 위해 일부만 제공합니다.")
+    detail["visit_place"] = visit_place_for(detail)
     detail["map_url"] = build_map_link(
-        str(detail.get("name") or "국가유산"),
+        detail["visit_place"],
         latitude=detail.get("latitude"),
         longitude=detail.get("longitude"),
         address=detail.get("address"),

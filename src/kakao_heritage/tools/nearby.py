@@ -10,6 +10,7 @@ from kakao_heritage.clients.kakao_local_api import KakaoLocalApiClient
 from kakao_heritage.exceptions import ToolError
 from kakao_heritage.services.distance_service import haversine_km
 from kakao_heritage.services.heritage_codes import city_code
+from kakao_heritage.services.trip_service import visit_place_for
 from kakao_heritage.utils.map_links import build_map_link
 
 
@@ -18,6 +19,7 @@ def find_nearby_heritage(
     longitude: float | None = None,
     location: str | None = None,
     region: str | None = None,
+    map_place_url: str | None = None,
     radius_km: float = 10.0,
     designation_types: list[str] | None = None,
     period: str | None = None,
@@ -33,8 +35,16 @@ def find_nearby_heritage(
 
     kakao = KakaoLocalApiClient()
     resolved_with_kakao = False
+    resolved_from_place_url = False
     region_name = region or ""
     try:
+        if latitude is None and longitude is None and map_place_url:
+            resolved = kakao.resolve_place_url(map_place_url)
+            if resolved:
+                latitude, longitude = float(resolved["y"]), float(resolved["x"])
+                location = location or str(resolved.get("place_name") or "")
+                region_name = region_name or str(resolved.get("address_name") or "")
+                resolved_from_place_url = True
         if latitude is None and longitude is None and location and kakao.configured:
             resolved = kakao.geocode(location)
             if resolved:
@@ -119,12 +129,14 @@ def find_nearby_heritage(
             float(item_longitude),
         )
         if distance <= radius:
+            visit_place = visit_place_for(item)
             results.append(
                 {
                     "heritage": item,
+                    "visit_place": visit_place,
                     "distance_km": distance,
                     "map_url": build_map_link(
-                        str(item.get("name") or ""),
+                        visit_place,
                         latitude=float(item_latitude),
                         longitude=float(item_longitude),
                         address=item.get("address"),
@@ -138,11 +150,14 @@ def find_nearby_heritage(
     sources = ["국가유산청 국가유산 정보 Open API"]
     if resolved_with_kakao:
         sources.append("Kakao Local API")
+    if resolved_from_place_url:
+        sources.append("카카오맵 공개 장소 페이지")
     return {
         "success": True,
         "query": {
             "location": location,
             "region": region_name,
+            "map_place_url": map_place_url,
             "latitude": latitude,
             "longitude": longitude,
             "radius_km": radius_km,

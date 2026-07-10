@@ -17,6 +17,7 @@ from kakao_heritage.services.heritage_codes import (
     region_heritage_terms,
     region_search_terms,
 )
+from kakao_heritage.services.trip_service import visit_place_for
 from kakao_heritage.utils.map_links import build_map_link
 
 GENERIC_RECOMMENDATION_TERMS = (
@@ -75,13 +76,22 @@ def _compact_result(item: dict[str, Any]) -> dict[str, Any]:
     description = str(item.get("description") or "").strip()
     if description:
         result["description_summary"] = description[:300]
+    visit_place = visit_place_for(item)
+    result["visit_place"] = visit_place
     result["map_url"] = build_map_link(
-        str(item.get("name") or "국가유산"),
+        visit_place,
         latitude=item.get("latitude"),
         longitude=item.get("longitude"),
         address=item.get("address"),
     )
     return result
+
+
+def _safe_detail(item: dict[str, Any]) -> dict[str, Any] | None:
+    try:
+        return HeritageApiClient().get_detail(str(item.get("heritage_id") or ""))
+    except httpx.HTTPError:
+        return None
 
 
 def search_heritage(
@@ -181,16 +191,9 @@ def search_heritage(
     if period:
         try:
             candidates = results[: min(max(limit * 3, 10), 30)]
-            with ThreadPoolExecutor(max_workers=min(10, len(candidates) or 1)) as pool:
-                details = list(
-                    pool.map(
-                        lambda item: HeritageApiClient().get_detail(
-                            str(item.get("heritage_id") or "")
-                        ),
-                        candidates,
-                    )
-                )
-        except httpx.HTTPError:
+            with ThreadPoolExecutor(max_workers=min(5, len(candidates) or 1)) as pool:
+                details = list(pool.map(_safe_detail, candidates))
+        except (RuntimeError, OSError):
             return {
                 "success": False,
                 "error": {
