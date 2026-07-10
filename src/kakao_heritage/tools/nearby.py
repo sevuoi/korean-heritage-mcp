@@ -68,6 +68,20 @@ def find_nearby_heritage(
                     "required_input": ["latitude", "longitude", "region"],
                 },
             }
+        if latitude is None or longitude is None:
+            return {
+                "success": False,
+                "error": {
+                    "code": "MAP_COORDINATES_REQUIRED",
+                    "message": (
+                        f"{location or region_name}의 정확한 주변 검색을 위해 먼저 지도 "
+                        "도구에서 위도·경도를 확인해 주세요. 지역 전체 결과를 반경 "
+                        "검색 결과로 대신 제공하지 않습니다."
+                    ),
+                    "recoverable": True,
+                    "required_input": ["latitude", "longitude", "region"],
+                },
+            }
         heritage_items = HeritageApiClient().get_list(
             city_code=parent_city_code, page_unit=500
         )
@@ -91,50 +105,33 @@ def find_nearby_heritage(
     max_results = max(1, min(limit, 20))
     warnings: list[str] = []
 
-    if latitude is not None and longitude is not None:
-        results: list[dict[str, Any]] = []
-        radius = max(0.1, min(radius_km, 50.0))
-        for item in filtered_items:
-            item_latitude = item.get("latitude")
-            item_longitude = item.get("longitude")
-            if item_latitude is None or item_longitude is None:
-                continue
-            distance = haversine_km(
-                latitude,
-                longitude,
-                float(item_latitude),
-                float(item_longitude),
-            )
-            if distance <= radius:
-                results.append(
-                    {
-                        "heritage": item,
-                        "distance_km": distance,
-                        "map_url": build_map_link(
-                            str(item.get("name") or ""),
-                            latitude=float(item_latitude),
-                            longitude=float(item_longitude),
-                            address=item.get("address"),
-                        ),
-                    }
-                )
-        results.sort(key=lambda entry: float(entry["distance_km"]))
-        search_mode = "distance"
-    else:
-        results = [
-            {
-                "heritage": item,
-                "distance_km": None,
-                "map_url": build_map_link(
-                    str(item.get("name") or ""), address=item.get("address")
-                ),
-            }
-            for item in filtered_items[:max_results]
-        ]
-        search_mode = "region_fallback"
-        warnings.append(
-            "정확한 좌표가 전달되지 않아 반경·거리 계산 대신 시도 단위 결과를 제공합니다."
+    results: list[dict[str, Any]] = []
+    radius = max(0.1, min(radius_km, 50.0))
+    for item in filtered_items:
+        item_latitude = item.get("latitude")
+        item_longitude = item.get("longitude")
+        if item_latitude is None or item_longitude is None:
+            continue
+        distance = haversine_km(
+            latitude,
+            longitude,
+            float(item_latitude),
+            float(item_longitude),
         )
+        if distance <= radius:
+            results.append(
+                {
+                    "heritage": item,
+                    "distance_km": distance,
+                    "map_url": build_map_link(
+                        str(item.get("name") or ""),
+                        latitude=float(item_latitude),
+                        longitude=float(item_longitude),
+                        address=item.get("address"),
+                    ),
+                }
+            )
+    results.sort(key=lambda entry: float(entry["distance_km"]))
 
     if period:
         warnings.append("시대 필터는 개별 상세 정보에서 추가 확인이 필요합니다.")
@@ -153,7 +150,7 @@ def find_nearby_heritage(
             "period": period,
         },
         "data": {
-            "search_mode": search_mode,
+            "search_mode": "distance",
             "reference_location": {
                 "name": location,
                 "region": region_name,

@@ -38,3 +38,17 @@ def test_nearby_returns_explicit_map_context_error(monkeypatch):
 
     assert result["success"] is False
     assert result["error"]["code"] == "MAP_CONTEXT_REQUIRED"
+
+
+def test_nearby_does_not_present_region_results_as_radius_results(monkeypatch):
+    monkeypatch.setattr(settings, "kakao_rest_api_key", None)
+    monkeypatch.setattr(
+        HeritageApiClient,
+        "get_list",
+        lambda self, **kwargs: [{"name": "서울 숭례문"}],
+    )
+
+    result = find_nearby_heritage(location="서울역", region="서울", radius_km=5)
+
+    assert result["success"] is False
+    assert result["error"]["code"] == "MAP_COORDINATES_REQUIRED"
