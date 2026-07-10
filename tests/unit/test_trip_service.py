@@ -101,3 +101,27 @@ def test_trip_plan_supports_alternative_and_excluded_places():
         stop["travel_minutes_from_previous"] is None
         for stop in first["itinerary"][0]["stops"]
     )
+
+
+def test_trip_plan_merges_same_visit_place_with_different_coordinates():
+    items = [
+        {
+            "name": "평창 월정사 팔각 구층석탑",
+            "manager": "월정사",
+            "latitude": 37.78,
+            "longitude": 128.55,
+        },
+        {
+            "name": "평창 월정사 석조보살좌상",
+            "manager": "월정사",
+            "latitude": 37.79,
+            "longitude": 128.56,
+        },
+    ]
+
+    plan = create_trip_plan(region="오대산", heritage_items=items)
+    stops = plan["itinerary"][0]["stops"]
+
+    assert len(stops) == 1
+    assert stops[0]["visit_place"] == "월정사"
+    assert len(stops[0]["featured_heritage"]) == 2

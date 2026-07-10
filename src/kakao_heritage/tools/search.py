@@ -8,7 +8,14 @@ import httpx
 
 from kakao_heritage.clients.heritage_api import HeritageApiClient
 from kakao_heritage.services.designation_service import normalize_designation_type
-from kakao_heritage.services.heritage_codes import city_code, designation_code
+from kakao_heritage.services.distance_service import haversine_km
+from kakao_heritage.services.heritage_codes import (
+    city_code,
+    designation_code,
+    region_center,
+    region_heritage_terms,
+    region_search_terms,
+)
 
 
 def _compact_result(item: dict[str, Any]) -> dict[str, Any]:
@@ -81,16 +88,41 @@ def search_heritage(
             },
         }
     if region:
-        region_text = region.replace(" ", "")
+        terms = tuple(term.replace(" ", "") for term in region_search_terms(region))
         results = [
             item
             for item in results
-            if region_text
-            in " ".join(
-                str(item.get(key) or "")
-                for key in ("city", "district", "address", "name")
-            ).replace(" ", "")
+            if any(
+                term
+                in " ".join(
+                    str(item.get(key) or "") for key in ("city", "district", "address")
+                ).replace(" ", "")
+                for term in terms
+            )
         ]
+        center = region_center(region)
+        if center:
+            center_latitude, center_longitude, radius_km = center
+            results = [
+                item
+                for item in results
+                if item.get("latitude") is not None
+                and item.get("longitude") is not None
+                and haversine_km(
+                    center_latitude,
+                    center_longitude,
+                    float(item["latitude"]),
+                    float(item["longitude"]),
+                )
+                <= radius_km
+            ]
+        heritage_terms = region_heritage_terms(region)
+        if heritage_terms:
+            results = [
+                item
+                for item in results
+                if any(term in str(item.get("name") or "") for term in heritage_terms)
+            ]
     if period:
         try:
             candidates = results[: min(max(limit * 3, 10), 30)]

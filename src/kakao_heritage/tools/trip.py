@@ -34,6 +34,19 @@ def plan_heritage_trip(
     if not heritage_items and themes:
         search_result = search_heritage(region=region, limit=candidate_limit)
         heritage_items = search_result.get("data", {}).get("results", [])
+    if not heritage_items:
+        return {
+            "success": False,
+            "error": {
+                "code": "TRIP_REGION_NOT_FOUND",
+                "message": (
+                    f"{region} 소재 국가유산을 확인하지 못했습니다. "
+                    "가까운 시군구나 더 넓은 지역명을 입력해 주세요."
+                ),
+                "recoverable": True,
+                "required_input": ["시군구 또는 시도 지역명"],
+            },
+        }
     plan = create_trip_plan(
         region=region,
         start_location=start_location,

@@ -47,7 +47,21 @@ def _group_places(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         featured = groups[key]["featured_heritage"]
         if name not in featured:
             featured.append(name)
-    return list(groups.values())
+    merged: dict[str, dict[str, Any]] = {}
+    for key, group in groups.items():
+        representative_name = str(group["representative"].get("name") or "")
+        visit_place = str(group["visit_place"])
+        merge_key = (
+            f"venue:{visit_place}" if visit_place != representative_name else key
+        )
+        if merge_key not in merged:
+            merged[merge_key] = group
+            continue
+        featured = merged[merge_key]["featured_heritage"]
+        for name in group["featured_heritage"]:
+            if name not in featured:
+                featured.append(name)
+    return list(merged.values())
 
 
 def create_trip_plan(

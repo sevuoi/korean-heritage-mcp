@@ -57,6 +57,28 @@ MUNICIPALITY_PARENT_CODES = {
     "공주시": "34",
 }
 
+REGION_ALIAS_CITY_CODES = {
+    "오대산": "51",
+    "설악산": "51",
+}
+
+REGION_ALIAS_TERMS = {
+    "오대산": ("평창", "홍천", "강릉"),
+    "설악산": ("속초", "인제", "양양", "고성"),
+    "지리산": ("산청", "함양", "하동", "구례", "남원"),
+}
+
+REGION_CENTERS = {
+    "오대산": (37.798, 128.543, 35.0),
+    "설악산": (38.119, 128.465, 40.0),
+    "지리산": (35.336, 127.73, 50.0),
+}
+
+REGION_HERITAGE_TERMS = {
+    "오대산": ("오대산", "월정사", "상원사"),
+    "설악산": ("설악산", "신흥사", "백담사"),
+}
+
 
 def designation_code(value: str | None) -> str | None:
     if not value:
@@ -68,8 +90,32 @@ def city_code(value: str | None) -> str | None:
     if not value:
         return None
     text = value.strip()
+    if text in REGION_ALIAS_CITY_CODES:
+        return REGION_ALIAS_CITY_CODES[text]
     if text in MUNICIPALITY_PARENT_CODES:
         return MUNICIPALITY_PARENT_CODES[text]
     if text in CITY_CODES:
         return CITY_CODES[text]
     return next((code for name, code in CITY_CODES.items() if name in text), None)
+
+
+def region_search_terms(value: str | None) -> tuple[str, ...]:
+    if not value:
+        return ()
+    text = value.strip()
+    alias = REGION_ALIAS_TERMS.get(text)
+    if alias:
+        return alias
+    return (text,)
+
+
+def region_center(value: str | None) -> tuple[float, float, float] | None:
+    if not value:
+        return None
+    return REGION_CENTERS.get(value.strip())
+
+
+def region_heritage_terms(value: str | None) -> tuple[str, ...]:
+    if not value:
+        return ()
+    return REGION_HERITAGE_TERMS.get(value.strip(), ())
