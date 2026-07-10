@@ -1,0 +1,14 @@
+.git
+.env
+.history
+.bkit
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.vscode
+__pycache__
+*.pyc
+build
+dist
+tests

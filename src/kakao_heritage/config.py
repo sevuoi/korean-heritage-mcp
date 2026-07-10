@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,7 +13,9 @@ class Settings(BaseSettings):
 
     mcp_transport: str = Field(default="stdio")
     mcp_host: str = Field(default="127.0.0.1")
-    mcp_port: int = Field(default=8000)
+    mcp_port: int = Field(
+        default=8000, validation_alias=AliasChoices("MCP_PORT", "PORT")
+    )
     mcp_path: str = Field(default="/mcp")
 
     kakao_rest_api_key: str | None = Field(default=None)
