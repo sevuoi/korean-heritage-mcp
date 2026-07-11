@@ -53,6 +53,30 @@ def test_real_heritage_name_containing_recommendation_word_is_preserved(monkeypa
     assert captured["name"] == "추천대"
 
 
+def test_visit_information_query_searches_only_heritage_name(monkeypatch):
+    captured = {}
+
+    def fake_list(self, **kwargs):
+        captured.update(kwargs)
+        return [{"name": "창덕궁", "address": "서울 종로구"}]
+
+    monkeypatch.setattr(HeritageApiClient, "get_list", fake_list)
+
+    result = search_heritage(query="창덕궁 개방시간, 입장료, 휴무일")
+
+    assert captured["name"] == "창덕궁"
+    assert result["success"] is True
+    assert result["data"]["requested_visit_information"] == [
+        "개방시간",
+        "입장료",
+        "휴무일",
+    ]
+    assert result["data"]["visit_information_status"] == (
+        "official_live_confirmation_required"
+    )
+    assert "추측하지 말고" in result["warnings"][0]
+
+
 def test_region_filter_uses_address_not_heritage_name(monkeypatch):
     monkeypatch.setattr(
         HeritageApiClient,

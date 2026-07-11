@@ -32,6 +32,18 @@ GENERIC_RECOMMENDATION_TERMS = (
     "문화유산",
     "문화재",
 )
+VISIT_INFORMATION_TERMS = (
+    "관람시간",
+    "개방시간",
+    "운영시간",
+    "입장마감",
+    "입장료",
+    "관람료",
+    "휴관일",
+    "휴무일",
+    "예약방법",
+    "예약",
+)
 
 
 def _interpret_query(
@@ -43,6 +55,14 @@ def _interpret_query(
     region = region or parsed.get("region")
     period = period or parsed.get("period")
     compact = query.replace(" ", "")
+    requested_visit_information = any(
+        term in compact for term in VISIT_INFORMATION_TERMS
+    )
+    if requested_visit_information:
+        for term in VISIT_INFORMATION_TERMS:
+            compact = compact.replace(term, "")
+        compact = compact.strip(".,!?·-_와과및")
+        return compact or None, region, period
     is_generic = compact in GENERIC_RECOMMENDATION_TERMS or any(
         compact.endswith(term) for term in GENERIC_RECOMMENDATION_TERMS
     )
@@ -102,6 +122,11 @@ def search_heritage(
     limit: int = 10,
 ) -> dict[str, Any]:
     original_query = query
+    requested_visit_information = [
+        term
+        for term in VISIT_INFORMATION_TERMS
+        if original_query and term in original_query.replace(" ", "")
+    ]
     query, region, period = _interpret_query(query, region, period)
     if not any((query, region, designation_type, period)):
         return {
@@ -210,6 +235,12 @@ def search_heritage(
         ]
     results = [_compact_result(item) for item in results[:limit]]
     warnings = [] if results else ["조건에 맞는 국가유산을 찾지 못했습니다."]
+    if requested_visit_information:
+        warnings.append(
+            "개방시간·입장료·휴무일은 수시로 변경되는 운영정보이며 국가유산청 "
+            "국가유산 정보 Open API의 제공 항목이 아닙니다. 확인되지 않은 시간이나 "
+            "요금을 추측하지 말고 해당 관리기관의 최신 공지를 추가 확인하세요."
+        )
     return {
         "success": True,
         "query": {
@@ -220,7 +251,13 @@ def search_heritage(
             "period": period,
             "limit": limit,
         },
-        "data": {"results": results},
+        "data": {
+            "results": results,
+            "requested_visit_information": requested_visit_information,
+            "visit_information_status": "official_live_confirmation_required"
+            if requested_visit_information
+            else None,
+        },
         "sources": ["국가유산청 국가유산 정보 Open API"],
         "generated_at": datetime.now(UTC).isoformat(),
         "warnings": warnings,
