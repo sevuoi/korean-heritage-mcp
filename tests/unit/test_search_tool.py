@@ -152,3 +152,16 @@ def test_designation_sentence_query_filters_by_designation(monkeypatch):
     assert result["query"]["region"] == "부여"
     assert captured["name"] is None
     assert captured["designation_code"] is not None
+
+
+def test_visit_info_for_unknown_heritage_fails_existence_check(monkeypatch):
+    def fake_list(self, **kwargs):
+        return []
+
+    monkeypatch.setattr(HeritageApiClient, "get_list", fake_list)
+
+    result = search_heritage(query="행복사 운영시간")
+
+    assert result["success"] is False
+    assert result["error"]["code"] == "HERITAGE_NOT_FOUND"
+    assert "행복사" in result["error"]["message"]

@@ -285,17 +285,26 @@ def search_heritage(
             if detail and period in str(detail.get("period") or "")
         ]
     results = [_compact_result(item) for item in results[:limit]]
-    if not results:
+    # 1단계(존재 확인)가 실패한 방문정보 질문은 여기서 끝낸다. 2단계(운영정보
+    # 안내)로 넘어가지 않아야 존재하지 않는 유산의 운영시간이 언급되지 않는다.
+    if requested_visit_information and not results:
         searched_name = query or original_query or ""
-        warnings = [
-            (
-                f"'{searched_name}'(이)라는 이름의 국가유산이 국가유산청 목록에 "
-                "없습니다. 운영시간 안내가 아니라 해당 유산이 존재하지 않는다는 "
-                "사실을 먼저 전달하고, 이름이 정확한지 사용자에게 확인하세요."
-            )
-            if requested_visit_information
-            else "조건에 맞는 국가유산을 찾지 못했습니다."
-        ]
+        return {
+            "success": False,
+            "error": {
+                "code": "HERITAGE_NOT_FOUND",
+                "message": (
+                    f"'{searched_name}'(이)라는 이름의 국가유산이 국가유산청 "
+                    "목록에 없습니다. 운영시간을 안내하지 말고, 해당 유산이 "
+                    "존재하지 않는다는 사실을 전달한 뒤 정확한 이름을 확인해 "
+                    "주세요."
+                ),
+                "recoverable": True,
+                "required_input": ["정확한 국가유산 이름"],
+            },
+        }
+    if not results:
+        warnings = ["조건에 맞는 국가유산을 찾지 못했습니다."]
     elif requested_visit_information:
         warnings = [
             "개방시간·입장료·휴무일은 수시로 변경되는 운영정보이며 국가유산청 "
