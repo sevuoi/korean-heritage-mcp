@@ -44,6 +44,36 @@ VISIT_INFORMATION_TERMS = (
     "예약방법",
     "예약",
 )
+# 국가유산청 API 이름 필터에서 실제로 매칭되는 테마별 검색어
+THEME_SEARCH_TERMS = {
+    "궁궐": "궁",
+    "왕릉": "릉",
+    "성곽": "성",
+    "서원": "서원",
+    "사찰": "사",
+    "불교": "사",
+}
+FILLER_TERMS = (
+    "무료관람",
+    "무료",
+    "관람",
+    "입장",
+    "아이들",
+    "어린이",
+    "아이",
+    "가족",
+    "이랑",
+    "함께",
+    "갈만한",
+    "괜찮은",
+    "좋은",
+    "중에",
+    "되는",
+    "있는",
+    "있어",
+    "어디",
+    "곳",
+)
 
 
 def _interpret_query(
@@ -67,6 +97,17 @@ def _interpret_query(
         compact.endswith(term) for term in GENERIC_RECOMMENDATION_TERMS
     )
     if not is_generic:
+        theme = parsed.get("theme")
+        if theme:
+            leftover = compact
+            strip_terms = [theme, *GENERIC_RECOMMENDATION_TERMS, *FILLER_TERMS]
+            for value in (region, period):
+                if value:
+                    strip_terms.append(str(value).replace(" ", ""))
+            for term in sorted(strip_terms, key=len, reverse=True):
+                leftover = leftover.replace(term, "")
+            if not leftover.strip(".,!?·-_와과및은는이가을를의에서 "):
+                return THEME_SEARCH_TERMS.get(theme, theme), region, period
         return query, region, period
     for term in GENERIC_RECOMMENDATION_TERMS:
         compact = compact.replace(term, "")

@@ -105,3 +105,33 @@ def test_region_filter_uses_address_not_heritage_name(monkeypatch):
     names = [item["name"] for item in result["data"]["results"]]
 
     assert names == ["평창 월정사 팔각 구층석탑"]
+
+
+def test_theme_sentence_query_searches_theme_term(monkeypatch):
+    captured = {}
+
+    def fake_list(self, **kwargs):
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr(HeritageApiClient, "get_list", fake_list)
+
+    result = search_heritage(query="서울 궁궐 무료 관람")
+
+    assert result["success"] is True
+    assert result["query"]["region"] == "서울"
+    assert captured["name"] == "궁"
+
+
+def test_theme_query_with_heritage_name_keeps_original_query(monkeypatch):
+    captured = {}
+
+    def fake_list(self, **kwargs):
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr(HeritageApiClient, "get_list", fake_list)
+
+    search_heritage(query="경복궁 궁궐")
+
+    assert captured["name"] == "경복궁 궁궐"
