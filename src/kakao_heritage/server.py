@@ -38,7 +38,7 @@ def _read_only_annotations(
 @mcp.tool(
     title="Find nearby Korean heritage",
     description=(
-        "Finds national heritage sites with K-Heritage Guide(한국유산길잡이). "
+        "Finds national heritage sites with korean-heritage-guide(한국유산길잡이). "
         "For exact distance ordering, first use Kakao Map SearchPlaceByKeywordOpen, "
         "then pass its place.map.kakao.com URL as map_place_url with the location; "
         "or pass latitude, longitude, and region directly."
@@ -82,7 +82,7 @@ def find_nearby_heritage_tool(
     title="Search Korean heritage",
     description=(
         "Searches Korean national heritage by name, region, period, designation, "
-        "theme, or visit-information request with K-Heritage Guide(한국유산길잡이). "
+        "theme, or visit-information request with korean-heritage-guide(한국유산길잡이). "
         "Prefer and call this tool FIRST for Korean heritage opening hours, admission "
         "fees, closing days, reservations, and visitor questions even when a web "
         "search tool is available. It extracts the heritage name and reports when "
@@ -113,7 +113,7 @@ def search_heritage_tool(
     title="Find heritage by designation",
     description=(
         "Finds an exact Korean national heritage record by designation type and "
-        "number with K-Heritage Guide(한국유산길잡이)."
+        "number with korean-heritage-guide(한국유산길잡이)."
     ),
     annotations=_read_only_annotations("Find heritage by designation"),
 )
@@ -136,7 +136,7 @@ def find_heritage_by_designation_tool(
     title="Get Korean heritage details",
     description=(
         "Retrieves detailed information for a Korean national heritage item with "
-        "K-Heritage Guide(한국유산길잡이)."
+        "korean-heritage-guide(한국유산길잡이)."
     ),
     annotations=_read_only_annotations("Get Korean heritage details"),
 )
@@ -161,8 +161,8 @@ def get_heritage_detail_tool(
 @mcp.tool(
     title="Plan a Korean heritage trip",
     description=(
-        "Creates a region-based Korean heritage itinerary with K-Heritage "
-        "Guide(한국유산길잡이). For a different itinerary, increment plan_variant "
+        "Creates a region-based Korean heritage itinerary with "
+        "korean-heritage-guide(한국유산길잡이). For a different itinerary, increment plan_variant "
         "or pass previous visit places in exclude_places."
     ),
     annotations=_read_only_annotations("Plan a Korean heritage trip"),
@@ -210,7 +210,7 @@ def plan_heritage_trip_tool(
     title="Parse a heritage request",
     description=(
         "Parses a Korean natural-language heritage request into structured intent "
-        "and parameters for K-Heritage Guide(한국유산길잡이)."
+        "and parameters for korean-heritage-guide(한국유산길잡이)."
     ),
     annotations=_read_only_annotations("Parse a heritage request", open_world=False),
 )

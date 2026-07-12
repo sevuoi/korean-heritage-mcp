@@ -18,7 +18,7 @@ async def test_all_tools_include_playmcp_metadata():
         assert "kakao" not in tool.name.lower()
         assert tool.title
         assert tool.description
-        assert "K-Heritage Guide(한국유산길잡이)" in tool.description
+        assert "korean-heritage-guide(한국유산길잡이)" in tool.description
         assert tool.annotations is not None
         assert tool.annotations.title
         assert tool.annotations.readOnlyHint is True
