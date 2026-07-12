@@ -11,10 +11,19 @@ GENERIC_MANAGERS = ("", "개인", "미상", "관리자")
 def visit_place_for(item: dict[str, Any]) -> str:
     name = str(item.get("name") or "문화유산")
     manager = str(item.get("manager") or "").strip()
-    if manager not in GENERIC_MANAGERS and (
-        manager in name or any(keyword in manager for keyword in VENUE_KEYWORDS)
-    ):
+    if manager in GENERIC_MANAGERS:
+        return name
+    if manager in name or any(keyword in manager for keyword in VENUE_KEYWORDS):
         return manager
+    # 소장 유물은 관리기관이 "대한불교조계종 무량사"처럼 소속을 앞에 붙인
+    # 형태가 많다. 유산 이름에 등장하는 기관 토큰(무량사)이 실제 방문 장소다.
+    venue_tokens = [
+        token
+        for token in manager.split()
+        if len(token) >= 2 and token not in GENERIC_MANAGERS and token in name
+    ]
+    if venue_tokens:
+        return max(venue_tokens, key=len)
     return name
 
 
