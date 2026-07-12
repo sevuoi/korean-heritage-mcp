@@ -45,13 +45,21 @@ def find_nearby_heritage(
                 location = location or str(resolved.get("place_name") or "")
                 region_name = region_name or str(resolved.get("address_name") or "")
                 resolved_from_place_url = True
-        if latitude is None and longitude is None and location and kakao.configured:
-            resolved = kakao.geocode(location)
+        if latitude is None and longitude is None and kakao.configured:
+            resolved = None
+            if location:
+                resolved = kakao.geocode(location)
+            elif region_name:
+                resolved = kakao.geocode_region(region_name)
             if resolved:
                 latitude, longitude = float(resolved["y"]), float(resolved["x"])
                 resolved_with_kakao = True
 
-        if latitude is not None and longitude is not None and not region_name:
+        if (
+            latitude is not None
+            and longitude is not None
+            and not city_code(region_name)
+        ):
             if kakao.configured:
                 resolved_region = kakao.region_from_coordinates(longitude, latitude)
                 region_name = (

@@ -57,6 +57,27 @@ class KakaoLocalApiClient:
         keyword_results = self.search_keyword(query, size=1)
         return keyword_results[0] if keyword_results else None
 
+    def geocode_region(self, query: str) -> dict[str, Any] | None:
+        """Geocode a bare region name, preferring the highest-level match.
+
+        An ambiguous name such as "양평" matches both neighborhood-level
+        "서울 영등포구 양평동1가" and county-level "경기 양평군"; the shortest
+        address (fewest depth tokens) is the broader administrative region.
+        """
+        documents = self._get(
+            "https://dapi.kakao.com/v2/local/search/address.json", {"query": query}
+        ).get("documents", [])
+        regions = [d for d in documents if d.get("address_type") == "REGION"]
+        if regions:
+            return min(
+                regions,
+                key=lambda d: len(str(d.get("address_name") or "").split()),
+            )
+        if documents:
+            return documents[0]
+        keyword_results = self.search_keyword(query, size=1)
+        return keyword_results[0] if keyword_results else None
+
     def resolve_place_url(self, url: str) -> dict[str, Any] | None:
         """Resolve a public Kakao place URL without requiring a REST API key."""
         parsed = urlparse(url)
