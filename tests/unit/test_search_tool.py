@@ -135,3 +135,20 @@ def test_theme_query_with_heritage_name_keeps_original_query(monkeypatch):
     search_heritage(query="경복궁 궁궐")
 
     assert captured["name"] == "경복궁 궁궐"
+
+
+def test_designation_sentence_query_filters_by_designation(monkeypatch):
+    captured = {}
+
+    def fake_list(self, **kwargs):
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr(HeritageApiClient, "get_list", fake_list)
+
+    result = search_heritage(query="부여 백제 시대 사적")
+
+    assert result["success"] is True
+    assert result["query"]["region"] == "부여"
+    assert captured["name"] is None
+    assert captured["designation_code"] is not None

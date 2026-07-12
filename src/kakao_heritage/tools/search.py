@@ -72,18 +72,25 @@ FILLER_TERMS = (
     "있는",
     "있어",
     "어디",
+    "시대",
+    "찾아줘",
+    "알려줘",
     "곳",
 )
 
 
 def _interpret_query(
-    query: str | None, region: str | None, period: str | None
-) -> tuple[str | None, str | None, str | None]:
+    query: str | None,
+    region: str | None,
+    period: str | None,
+    designation_type: str | None,
+) -> tuple[str | None, str | None, str | None, str | None]:
     if not query:
-        return query, region, period
+        return query, region, period, designation_type
     parsed = parse_heritage_query(query)
     region = region or parsed.get("region")
     period = period or parsed.get("period")
+    designation_type = designation_type or parsed.get("designation_type")
     compact = query.replace(" ", "")
     requested_visit_information = any(
         term in compact for term in VISIT_INFORMATION_TERMS
@@ -92,30 +99,31 @@ def _interpret_query(
         for term in VISIT_INFORMATION_TERMS:
             compact = compact.replace(term, "")
         compact = compact.strip(".,!?·-_와과및")
-        return compact or None, region, period
+        return compact or None, region, period, designation_type
     is_generic = compact in GENERIC_RECOMMENDATION_TERMS or any(
         compact.endswith(term) for term in GENERIC_RECOMMENDATION_TERMS
     )
     if not is_generic:
         theme = parsed.get("theme")
-        if theme:
+        if theme or designation_type:
             leftover = compact
-            strip_terms = [theme, *GENERIC_RECOMMENDATION_TERMS, *FILLER_TERMS]
-            for value in (region, period):
+            strip_terms = [*GENERIC_RECOMMENDATION_TERMS, *FILLER_TERMS]
+            for value in (theme, designation_type, region, period):
                 if value:
                     strip_terms.append(str(value).replace(" ", ""))
             for term in sorted(strip_terms, key=len, reverse=True):
                 leftover = leftover.replace(term, "")
             if not leftover.strip(".,!?·-_와과및은는이가을를의에서 "):
-                return THEME_SEARCH_TERMS.get(theme, theme), region, period
-        return query, region, period
+                name_term = THEME_SEARCH_TERMS.get(theme, theme) if theme else None
+                return name_term, region, period, designation_type
+        return query, region, period, designation_type
     for term in GENERIC_RECOMMENDATION_TERMS:
         compact = compact.replace(term, "")
     for value in (region, period):
         if value:
             compact = compact.replace(str(value).replace(" ", ""), "")
     compact = compact.strip(".,!?·-_")
-    return compact or None, region, period
+    return compact or None, region, period, designation_type
 
 
 def _compact_result(item: dict[str, Any]) -> dict[str, Any]:
@@ -168,7 +176,9 @@ def search_heritage(
         for term in VISIT_INFORMATION_TERMS
         if original_query and term in original_query.replace(" ", "")
     ]
-    query, region, period = _interpret_query(query, region, period)
+    query, region, period, designation_type = _interpret_query(
+        query, region, period, designation_type
+    )
     if not any((query, region, designation_type, period)):
         return {
             "success": False,

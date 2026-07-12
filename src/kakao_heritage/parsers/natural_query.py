@@ -26,6 +26,15 @@ REGIONS = (
     "공주",
 )
 PERIODS = ("선사", "삼국", "고구려", "백제", "신라", "통일신라", "고려", "조선", "근대")
+DESIGNATION_TYPES = (
+    "국보",
+    "보물",
+    "사적",
+    "명승",
+    "천연기념물",
+    "국가민속문화유산",
+    "국가무형유산",
+)
 
 
 def _first_match(text: str, values: tuple[str, ...]) -> str | None:
@@ -41,9 +50,11 @@ def _base(intent: str, text: str) -> dict[str, Any]:
         ),
         None,
     )
+    # "역사적인 장소"의 '사적' 오탐 방지
+    designation_text = text.replace("역사적", "")
     return {
         "intent": intent,
-        "designation_type": None,
+        "designation_type": _first_match(designation_text, DESIGNATION_TYPES),
         "designation_number": None,
         "region": _first_match(text, REGIONS),
         "period": _first_match(text, PERIODS),
