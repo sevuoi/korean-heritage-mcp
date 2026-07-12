@@ -285,13 +285,25 @@ def search_heritage(
             if detail and period in str(detail.get("period") or "")
         ]
     results = [_compact_result(item) for item in results[:limit]]
-    warnings = [] if results else ["조건에 맞는 국가유산을 찾지 못했습니다."]
-    if requested_visit_information:
-        warnings.append(
+    if not results:
+        searched_name = query or original_query or ""
+        warnings = [
+            (
+                f"'{searched_name}'(이)라는 이름의 국가유산이 국가유산청 목록에 "
+                "없습니다. 운영시간 안내가 아니라 해당 유산이 존재하지 않는다는 "
+                "사실을 먼저 전달하고, 이름이 정확한지 사용자에게 확인하세요."
+            )
+            if requested_visit_information
+            else "조건에 맞는 국가유산을 찾지 못했습니다."
+        ]
+    elif requested_visit_information:
+        warnings = [
             "개방시간·입장료·휴무일은 수시로 변경되는 운영정보이며 국가유산청 "
             "국가유산 정보 Open API의 제공 항목이 아닙니다. 확인되지 않은 시간이나 "
-            "요금을 추측하지 말고 해당 관리기관의 최신 공지를 추가 확인하세요."
-        )
+            "요금을 추측하지 말고 각 결과의 map_url 카카오맵 링크를 안내하세요."
+        ]
+    else:
+        warnings = []
     return {
         "success": True,
         "query": {
