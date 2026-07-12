@@ -110,7 +110,10 @@ def create_trip_plan(
                     else 60,
                     "travel_minutes_from_previous": None,
                     "travel_time_is_estimate": False,
-                    "visit_note": "운영시간과 전시 여부는 방문 전 확인하세요.",
+                    "visit_note": (
+                        "운영시간·전시 여부는 이 방문지의 map_url 카카오맵 "
+                        "링크에서 바로 확인할 수 있습니다. 링크를 함께 안내하세요."
+                    ),
                     "map_url": build_map_link(
                         visit_place,
                         latitude=item.get("latitude"),
@@ -125,7 +128,10 @@ def create_trip_plan(
                 "title": f"{region} 문화유산 일정 {day}일차",
                 "stops": stops,
                 "meal_area": region,
-                "parking_notes": ["카카오맵에서 방문지별 최신 주차 정보를 확인하세요."],
+                "parking_notes": [
+                    "주차 정보는 각 방문지의 map_url 카카오맵 링크에서 바로 "
+                    "확인할 수 있습니다. 사용자에게 링크를 함께 안내하세요."
+                ],
                 "travel_notes": ["이동시간은 실제 교통상황에 따라 달라집니다."],
             }
         )

@@ -73,5 +73,8 @@ def plan_heritage_trip(
         "data": plan,
         "sources": ["국가유산청 국가유산 정보 Open API"],
         "generated_at": datetime.now(UTC).isoformat(),
-        "warnings": ["운영시간·요금·교통상황은 방문 전에 확인하세요."],
+        "warnings": [
+            "운영시간·요금·주차 정보는 각 방문지의 map_url 카카오맵 링크에서 "
+            "확인할 수 있습니다. 일반적인 당부 대신 각 장소의 링크를 안내하세요."
+        ],
     }
